@@ -1,0 +1,1 @@
+"compile override.bat" gokz-fun-race.sp
