@@ -1,29 +1,5 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+### 为什么会有这个插件 ###
 
-### What is this repository for? ###
-
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+#### 本插件专为GOKZ娱乐比赛准备 详见[gokz.cn](gokc.cn)
