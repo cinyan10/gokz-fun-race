@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <sdkhooks>
+#include <movement>
 #include <emitsoundany>
 #include <gokz_fun_race>
 #include <gokz>
@@ -109,10 +110,16 @@ public void OnClientDisconnect(int client)
 	OnClientDisconnect_SpaceOnly(client);
 }
 
+public Action OnPlayerRunCmd(int client, int& buttons, int& impulse, float vel[3], float angles[3], int& weapon, int& subtype, int& cmdnum, int& tickcount, int& seed, int mouse[2])
+{
+	OnPlayerRunCmd_SpaceOnly(client, buttons);
+}
+
 // 玩家落地时触发
 public void GOKZ_JS_OnLanding(Jump jump)
 {
-	OnLanding_SpaceOnly(jump);
+	GOKZ_Fun_Race_CheckPause(jump.jumper);
+	// OnLanding_SpaceOnly(jump);
 }
 
 // 玩家启动计时器时触发
@@ -129,7 +136,7 @@ public Action GOKZ_OnTimerStart(int client, int course)
 		}
 
 		// 如果 关卡不对 或 倒计时结束
-		if(course != gI_RaceCourse || gI_RaceStartCountDown > 0)
+		if(gB_IsRacePause || course != gI_RaceCourse || gI_RaceStartCountDown > 0)
 		{
 			// 禁止开始
 			return Plugin_Stop;
@@ -146,8 +153,9 @@ public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsU
 	// 如果当前是比赛状态
 	if(gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
 	{
-		OnTimerEnd_SpaceOnly(client, time, teleportsUsed);
-		OnTimerEnd_LowGravity(client, time, teleportsUsed);
+
+		GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成了比赛! %s[%s | %d TP]", gC_Colors[Color_Green], gC_Colors[Color_Purple], client, gC_Colors[Color_Green], gC_Colors[Color_Yellow], GOKZ_FormatTime(time), teleportsUsed);
+		GOKZ_Fun_Race_FinishRace(client);
 		GOKZ_StopTimer(client);
 		return Plugin_Stop;
 	}
@@ -159,6 +167,7 @@ public Action GOKZ_OnResume(int client)
 	if(gB_IsRacePause && gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
 	{
 		GOKZ_PrintToChat(client, true, "%c比赛暂停中，请耐心等待", gC_Colors[Color_Red]);
+		GOKZ_PlayErrorSound(client);
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;

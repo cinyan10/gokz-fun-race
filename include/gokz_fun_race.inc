@@ -5,10 +5,8 @@
 
 
 
-//////////////////
-//	   字段	  //
-//////////////////
 
+// -------- [ 字段 ] --------
 // 最大玩家数
 #define MAXCLIENTS 65
 
@@ -66,11 +64,8 @@ enum Color:
 stock char gC_Colors[COLOR_COUNT][5] = {"\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07", "\x08", "\x09"};
 
 
-//////////////////
-//	调用接口   //
-//////////////////
 
-// ---------- [ 主插件 ] ----------
+// -------- [ 接口 ] --------
 
 /**
  * 惩罚违反规则的玩家(直接处死->终止计时并回出生点)
@@ -86,62 +81,68 @@ native void GOKZ_Fun_Race_Punish(int client, const char[] reason);
 native RaceType GOKZ_Fun_Race_GetCurrentRaceType();
 
  /**
-  * 获取当前比赛状态
-  */
+	* 获取当前比赛状态
+	*/
 native RaceStatus GOKZ_Fun_Race_GetCurrentRaceStatus();
 
  /**
-  * 重置所有比赛状态
-  */
+	* 重置所有比赛状态
+	*/
 native void GOKZ_Fun_Race_ResetRaceStatus();
 
  /**
-  * 初始化新的比赛
-  * @param client 操作者
-  * @param raceType 比赛项目
-  * @param course 比赛关卡
-  */
+	* 初始化新的比赛
+	* @param client 操作者
+	* @param raceType 比赛项目
+	* @param course 比赛关卡
+	*/
 native void GOKZ_Fun_Race_SetupRace(int client, RaceType raceType, int course, int mode);
 
 /**
-  * 开始比赛
-  * @param client 操作者
-  */
+	* 开始比赛
+	* @param client 操作者
+	*/
 native void GOKZ_Fun_Race_StartRace(int client);
 
 /**
-  * 结束当前比赛
-  * @param client 操作者
-  * @param reason 结束原因
-  */
+	* 结束当前比赛
+	* @param client 操作者
+	* @param reason 结束原因
+	*/
 native void GOKZ_Fun_Race_EndRace(int client, char[] reason);
 
 /**
-  * 获取当前比赛是否暂停
+	* 获取当前比赛是否暂停
  */
 native bool GOKZ_Fun_Race_IsRacePause();
 
 /**
-  * 暂停当前比赛
-  * @param client 操作者
+	* 检查暂停状态
+	* @param client 玩家
+ */
+native void GOKZ_Fun_Race_CheckPause(int client);
+
+/**
+	* 暂停当前比赛
+	* @param client 操作者
  */
 native void GOKZ_Fun_Race_PauseRace(int client);
 
 /**
-  * 恢复当前比赛
-  * @param client 操作者
+	* 恢复当前比赛
+	* @param client 操作者
  */
 native void GOKZ_Fun_Race_ResumeRace(int client);
 
 /**
-  * 完成比赛
-  * @param client 玩家
+	* 完成比赛
+	* @param client 玩家
  */
 native void GOKZ_Fun_Race_FinishRace(int client);
 
 /**
-  * 比赛弃权
-  * @param client 玩家
+	* 比赛弃权
+	* @param client 玩家
  */
 native void GOKZ_Fun_Race_SurrenderRace(int client);
 

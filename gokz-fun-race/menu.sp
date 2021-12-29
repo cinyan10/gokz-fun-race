@@ -1,6 +1,3 @@
-//////////////////
-//	   字段	  //
-//////////////////
 
 Menu gH_FunRaceChooseEventMenu;
 Menu gH_FunRaceChooseCourseMenu;
@@ -12,9 +9,8 @@ int gI_RaceModeChoose[MAXCLIENTS];
 
 
 
-//////////////////
-//	   事件	  //
-//////////////////
+
+// -------- [ 事件 ] --------
 public void OnPluginStart_Menu()
 {
 	// 初始化比赛项目选择菜单
@@ -156,9 +152,8 @@ void OpenFunRaceRunningMenu(int client)
 
 
 
-//////////////////
-//菜单处理函数//
-//////////////////
+
+// -------- [ 菜单 ] --------
 
 // 选择比赛项目菜单
 FunRaceChooseEventMenuHandler(Handle:menu, MenuAction:action, client, select)

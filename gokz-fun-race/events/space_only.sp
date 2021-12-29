@@ -4,8 +4,10 @@
 #define MAX_SCROLL_VIOLATE 5
 #define CHECK_SCROLL_COUNT 5
 
+bool gB_JumpInputRecord[MAXCLIENTS][2]; // 最近两次usercmd是否起跳
+bool gB_OnGroundLastTick[MAXCLIENTS]; // 最近1tick是否在地上
+float gF_LastScrolledTime[MAXCLIENTS];
 int gI_ScrollViolated[MAXCLIENTS]; // 累计使用滚轮次数
-int gI_LastScrollPattern[MAXCLIENTS][CHECK_SCROLL_COUNT]; // 上次跳跃数据
 
 
 //////////////////
@@ -19,6 +21,10 @@ int gI_LastScrollPattern[MAXCLIENTS][CHECK_SCROLL_COUNT]; // 上次跳跃数据
 void SpaceOnly_ResetStatus(int client)
 {
 	gI_ScrollViolated[client] = 0;
+	gF_LastScrolledTime[client] = 0.0;
+	gB_JumpInputRecord[client][0] = false;
+	gB_JumpInputRecord[client][1] = false;
+	gB_OnGroundLastTick[client] = false;
 }
 
 /**
@@ -29,10 +35,7 @@ bool CheckRaceType_SpaceOnly()
 	return GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_SpaceOnly;
 }
 
-//////////////////
-//	   事件	  //
-//////////////////
-
+// -------- [ 事件 ] --------
 void OnClientDisconnect_SpaceOnly(int client)
 {
 	SpaceOnly_ResetStatus(client);
@@ -48,72 +51,37 @@ void OnTimerStart_SpaceOnly(int client)
 	SpaceOnly_ResetStatus(client);
 }
 
-void OnTimerEnd_SpaceOnly(int client, float time, int cp)
+void OnPlayerRunCmd_SpaceOnly(int client, int& buttons)
 {
-	if(!CheckRaceType_SpaceOnly())
+	if(!CheckRaceType_SpaceOnly() || !GOKZ_Fun_Race_IsRacer(client) || GOKZ_Fun_Race_IsRacerFinished(client) || !GOKZ_GetTimerRunning(client))
 	{
 		return;
 	}
 
-	GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成地图! %s[%s | %d TP]", gC_Colors[Color_Green], gC_Colors[Color_Purple], client, gC_Colors[Color_Green], gC_Colors[Color_Yellow], GOKZ_FormatTime(time), cp);
-	GOKZ_Fun_Race_FinishRace(client);
-}
- 
- /**
-  * 当玩家完成一次跳跃时
-  * @param jump 起跳详细数据
-  */
-void OnLanding_SpaceOnly(Jump jump)
-{
-	if(!CheckRaceType_SpaceOnly())
+	bool jump = (buttons & IN_JUMP) == IN_JUMP;
+	if(!jump && gB_JumpInputRecord[client][0] && !gB_JumpInputRecord[client][1])
 	{
-		return;
+		gF_LastScrolledTime[client] = GetGameTime();
 	}
 
-	// 获取跳跃者
-	int client = jump.jumper;
- 
-	// 判断计时是否开始
-	if(!GOKZ_Fun_Race_IsRacer(client) || !GOKZ_GetTimerRunning(client))
+	bool onGround = Movement_GetOnGround(client);
+	if(!onGround && gB_OnGroundLastTick[client] && GetGameTime() - gF_LastScrolledTime[client] < 0.05)
 	{
-		return;
-	}
-	 
-	// 获取最近一次连跳pattern
-	int pattern[CHECK_SCROLL_COUNT];
-	GOKZ_AC_GetJumpInputs(client, pattern, CHECK_SCROLL_COUNT);
-	// 如果pattern超过2 则有极大概率是使用了滚轮
-	if(pattern[0] > 2)
-	{
-		// 判断连跳pattern较上次起跳变没变
-		bool same = true;
-		// 判断同时保存这次pattern
-		for(int i = 0; i < CHECK_SCROLL_COUNT; i++)
-		{
-			if(pattern[i] != gI_LastScrollPattern[client][i])
-			{
-				same = false;
-			}
-			gI_LastScrollPattern[client][i] = pattern[i];
-		}
-
-		// 如果没变则略过这次
-		if(same)
-		{
-			return;
-		}
-
 		// 违规次数加一
 		gI_ScrollViolated[client]++;
 
 		// 通告玩家
-		GOKZ_PrintToChat(client, true, "%s检测到非空格连跳[%d / %d]", gC_Colors[Color_Red], gI_ScrollViolated[client], MAX_SCROLL_VIOLATE);
+		GOKZ_PrintToChat(client, true, "%s检测到滚轮跳[%d / %d]", gC_Colors[Color_Red], gI_ScrollViolated[client], MAX_SCROLL_VIOLATE);
 		
 		// 如果超过最大违规次数
 		if(gI_ScrollViolated[client] >= MAX_SCROLL_VIOLATE)
 		{
 			// 惩罚玩家
 			GOKZ_Fun_Race_Punish(client, "在空格跳比赛中多次使用滚轮跳");
+			SpaceOnly_ResetStatus(client);
 		}
 	}
+	gB_OnGroundLastTick[client] = onGround;
+	gB_JumpInputRecord[client][1] = gB_JumpInputRecord[client][0];
+	gB_JumpInputRecord[client][0] = jump;
 }

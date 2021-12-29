@@ -14,11 +14,11 @@ public Action CommandFunRaceTest(int client, int args)
 	if(IsValidClient(client) && GetUserAdmin(client) != INVALID_ADMIN_ID)
 	{
 		gI_RaceStatus = RaceStatus_Running;
-		gI_RaceType = RaceType_LowGravity;
+		gI_RaceType = RaceType_SpaceOnly;
 		gB_IsRacer[client] = true;
 		gI_RacerCount = 1;
 		gI_RaceMode = 2;
-		GOKZ_PrintToChat(client, true, "测试 - 低重力");
+		GOKZ_PrintToChat(client, true, "测试 - 空格跳");
 	}
 	return Plugin_Handled;
 }

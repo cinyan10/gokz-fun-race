@@ -9,6 +9,7 @@ void CreateNatives()
 	CreateNative("GOKZ_Fun_Race_SetupRace", Native_Fun_Race_SetupRace);
 	CreateNative("GOKZ_Fun_Race_StartRace", Native_Fun_Race_StartRace);
 	CreateNative("GOKZ_Fun_Race_EndRace", Native_Fun_Race_EndRace);
+	CreateNative("GOKZ_Fun_Race_CheckPause", Native_Fun_Race_CheckPause);
 	CreateNative("GOKZ_Fun_Race_PauseRace", Native_Fun_Race_PauseRace);
 	CreateNative("GOKZ_Fun_Race_ResumeRace", Native_Fun_Race_ResumeRace);
 	CreateNative("GOKZ_Fun_Race_FinishRace", Native_Fun_Race_FinishRace);
@@ -178,6 +179,19 @@ public int Native_Fun_Race_EndRace(Handle plugin, int numParams)
 	GOKZ_PrintToChatAll(true, "%s%s, 比赛结束! ", gC_Colors[Color_Yellow], reason);
 }
 
+public int Native_Fun_Race_CheckPause(Handle plugin, int numParams)
+{
+	if(gB_IsRacePause)
+	{
+		int client = GetNativeCell(1);
+		if(gB_IsRacer[client] && !gB_IsRacerFinished[client] && !GOKZ_GetPaused(client) && Movement_GetOnGround(client))
+		{
+			Movement_SetVelocity(client, view_as<float>( { 0.0, 0.0, 0.0 } ));
+			GOKZ_Pause(client);
+		}
+	}
+}
+
 public int Native_Fun_Race_PauseRace(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
@@ -187,7 +201,7 @@ public int Native_Fun_Race_PauseRace(Handle plugin, int numParams)
 	{
 		if(IsValidClient(racer) && gB_IsRacer[racer] && !GOKZ_GetPaused(racer))
 		{
-			GOKZ_Pause(racer);
+			GOKZ_Fun_Race_CheckPause(racer);
 		}
 	}
 	GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s暂停了比赛", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow]);
