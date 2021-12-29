@@ -3,7 +3,24 @@ void RegisterCommands()
 	RegConsoleCmd("sm_funrace", CommandFunRace, "Open fun race menu");
 	RegConsoleCmd("sm_fr", CommandFunRace, "sm_funrace abbr");
 	RegConsoleCmd("sm_bm", CommandFunRaceAccept, "Accept current fun race");
-	RegConsoleCmd("sm_fq", CommandFunRaceSurrender, "Surrender in current Fun Race");
+	RegConsoleCmd("sm_fq", CommandFunRaceSurrender, "Surrender in current fun race");
+	RegConsoleCmd("sm_frt", CommandFunRaceTest, "Test command for fun race");
+}
+
+// 测试指令
+public Action CommandFunRaceTest(int client, int args)
+{
+	// 仅OP可用
+	if(IsValidClient(client) && GetUserAdmin(client) != INVALID_ADMIN_ID)
+	{
+		gI_RaceStatus = RaceStatus_Running;
+		gI_RaceType = RaceType_LowGravity;
+		gB_IsRacer[client] = true;
+		gI_RacerCount = 1;
+		gI_RaceMode = 2;
+		GOKZ_PrintToChat(client, true, "测试 - 低重力");
+	}
+	return Plugin_Handled;
 }
 
 // 主指令

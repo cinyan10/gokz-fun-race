@@ -16,11 +16,29 @@ bool CheckRaceType_LowGravity()
 void OnPluginStart_LowGravity()
 {
 	gCVar_Gravity = FindConVar("sv_gravity");
+	for(int client = 1; client < MAXCLIENTS; client++)
+	{
+		if(IsValidClient(client))
+		{
+			SDKHook(client, SDKHook_PreThinkPost, SDKHook_OnClientPreThinkPost);
+		}
+	}
 }
 
 void OnClientPutInServer_LowGravity(int client)
 {
 	SDKHook(client, SDKHook_PreThinkPost, SDKHook_OnClientPreThinkPost);
+}
+
+void OnTimerEnd_LowGravity(int client, float time, int cp)
+{
+	if(!CheckRaceType_LowGravity())
+	{
+		return;
+	}
+
+	GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成地图! %s[%s | %d TP]", gC_Colors[Color_Green], gC_Colors[Color_Purple], client, gC_Colors[Color_Green], gC_Colors[Color_Yellow], GOKZ_FormatTime(time), cp);
+	GOKZ_Fun_Race_FinishRace(client);
 }
 
 

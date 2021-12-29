@@ -147,6 +147,7 @@ public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsU
 	if(gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
 	{
 		OnTimerEnd_SpaceOnly(client, time, teleportsUsed);
+		OnTimerEnd_LowGravity(client, time, teleportsUsed);
 		GOKZ_StopTimer(client);
 		return Plugin_Stop;
 	}
