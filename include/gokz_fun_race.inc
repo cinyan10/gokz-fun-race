@@ -6,7 +6,7 @@
 
 
 //////////////////
-//       字段      //
+//	   字段	  //
 //////////////////
 
 // 最大玩家数
@@ -19,34 +19,34 @@ stock char gC_CountDownReadySound[64] = "ui/lobby_notification_matchready.wav"; 
 // 比赛状态枚举
 enum RaceStatus:
 {
-    RaceStatus_End = 0, // 当前无比赛
-    RaceStatus_Waiting, // 当前正在等待玩家接受比赛
-    RaceStatus_Running, // 当前正在进行比赛
-    RACESTATUS_COUNT,
+	RaceStatus_End = 0, // 当前无比赛
+	RaceStatus_Waiting, // 当前正在等待玩家接受比赛
+	RaceStatus_Running, // 当前正在进行比赛
+	RACESTATUS_COUNT,
 }
 
 // 比赛项目枚举
 enum RaceType:
 {
-    RaceType_None = 0, // 当前无比赛
-    RaceType_LeftHand, // 左手KZ
-    RaceType_LowGravity, // 低重力
-    RaceType_Relay, // 接力赛
-    RaceType_WASD, // 更改WASD键位
-    RaceType_SpaceOnly, // 空格跳
-    RaceType_ADStrafeBind, // AD绑定视角
-    RACETYPE_COUNT,
+	RaceType_None = 0, // 当前无比赛
+	RaceType_LeftHand, // 左手KZ
+	RaceType_LowGravity, // 低重力
+	RaceType_Relay, // 接力赛
+	RaceType_WASD, // 更改WASD键位
+	RaceType_SpaceOnly, // 空格跳
+	RaceType_ADStrafeBind, // AD绑定视角
+	RACETYPE_COUNT,
 }
 
 // 比赛项目名称
 stock char gC_RaceTypeName[RACETYPE_COUNT][20] = {
-    "无",
-    "左手KZ",
-    "低重力",
-    "接力赛",
-    "更改WASD键位",
-    "空格跳",
-    "AD绑定视角",
+	"无",
+	"左手KZ",
+	"低重力",
+	"接力赛",
+	"更改WASD键位",
+	"空格跳",
+	"AD绑定视角",
 };
 
 // 颜色枚举
@@ -67,7 +67,7 @@ stock char gC_Colors[COLOR_COUNT][5] = {"\x01", "\x02", "\x03", "\x04", "\x05", 
 
 
 //////////////////
-//    调用接口   //
+//	调用接口   //
 //////////////////
 
 // ---------- [ 主插件 ] ----------

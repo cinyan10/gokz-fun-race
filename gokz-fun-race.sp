@@ -22,9 +22,11 @@ char gC_RacerRank[MAXCLIENTS][64]; // 玩家排名
 
 Handle gH_CountdownSynchronizer; // 倒计时HUD
 
+#include "gokz-fun-race/events/space_only.sp"
+#include "gokz-fun-race/events/low_gravity.sp"
+
 #include "gokz-fun-race/menu.sp"
 #include "gokz-fun-race/command.sp"
-#include "gokz-fun-race/events/space_only.sp"
 
 #include "gokz-fun-race/native.sp"
 
@@ -61,7 +63,9 @@ public void OnPluginStart()
 
 	RegisterCommands();
 
-	Menu_OnPluginStart();
+	OnPluginStart_Menu();
+
+	OnPluginStart_LowGravity();
 
 	gH_CountdownSynchronizer = CreateHudSynchronizer();
 }
@@ -84,6 +88,11 @@ void DisableGOKZSettingEnforcer()
 	}
 }
 
+public void OnClientPutInServer(int client)
+{
+	OnClientPutInServer_LowGravity(client);
+}
+
 public void OnClientDisconnect(int client)
 {
 	// 判断是否参赛者
@@ -97,13 +106,13 @@ public void OnClientDisconnect(int client)
 		}
 	}
 	// 之后各个比赛项目处理玩家离开事件
-	SpaceOnly_OnClientDisconnect(client);
+	OnClientDisconnect_SpaceOnly(client);
 }
 
 // 玩家落地时触发
 public void GOKZ_JS_OnLanding(Jump jump)
 {
-	SpaceOnly_OnLanding(jump);
+	OnLanding_SpaceOnly(jump);
 }
 
 // 玩家启动计时器时触发
@@ -128,7 +137,7 @@ public Action GOKZ_OnTimerStart(int client, int course)
 	}
 	
 	// 若能开始 则让各个项目开始处理事件
-	SpaceOnly_OnTimerStart(client);
+	OnTimerStart_SpaceOnly(client);
 	return Plugin_Continue;
 }
 
@@ -137,7 +146,7 @@ public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsU
 	// 如果当前是比赛状态
 	if(gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
 	{
-		SpaceOnly_OnTimerEnd(client, time, teleportsUsed);
+		OnTimerEnd_SpaceOnly(client, time, teleportsUsed);
 		GOKZ_StopTimer(client);
 		return Plugin_Stop;
 	}
