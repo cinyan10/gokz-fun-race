@@ -15,17 +15,16 @@ int gI_RaceCourse; // 当前比赛关卡
 int gI_RaceMode; // 当前比赛模式
 int gI_RacerCount; // 当前比赛参赛人数
 int gI_RacerFinishCount; // 当前比赛完赛人数
-int gI_RaceStartCountDown; // 当前比赛倒计时
 bool gB_IsRacePause; // 当前比赛暂停状态
 bool gB_IsRacer[MAXCLIENTS]; // 玩家参赛状态
 bool gB_IsRacerFinished[MAXCLIENTS]; // 玩家完赛状态
 char gC_RacerRank[MAXCLIENTS][64]; // 玩家排名
 
-Handle gH_CountdownSynchronizer; // 倒计时HUD
 
 #include "gokz-fun-race/events/space_only.sp"
 #include "gokz-fun-race/events/low_gravity.sp"
 
+#include "gokz-fun-race/countdown.sp"
 #include "gokz-fun-race/menu.sp"
 #include "gokz-fun-race/command.sp"
 
@@ -63,12 +62,11 @@ public void OnPluginStart()
 	GOKZ_Fun_Race_ResetRaceStatus();
 
 	RegisterCommands();
-
-	OnPluginStart_Menu();
-
+	
 	OnPluginStart_LowGravity();
 
-	gH_CountdownSynchronizer = CreateHudSynchronizer();
+	OnPluginStart_Menu();
+	OnPluginStart_CountDown();
 }
 
 public void OnAllPluginsLoaded()
@@ -136,7 +134,7 @@ public Action GOKZ_OnTimerStart(int client, int course)
 		}
 
 		// 如果 关卡不对 或 倒计时结束
-		if(gB_IsRacePause || course != gI_RaceCourse || gI_RaceStartCountDown > 0)
+		if(gB_IsRacePause || course != gI_RaceCourse || GetCountDownRemain() > 0)
 		{
 			// 禁止开始
 			return Plugin_Stop;

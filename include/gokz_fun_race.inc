@@ -63,6 +63,11 @@ enum Color:
 }
 stock char gC_Colors[COLOR_COUNT][5] = {"\x01", "\x02", "\x03", "\x04", "\x05", "\x06", "\x07", "\x08", "\x09"};
 
+stock int Clamp(int target, int min, int max)
+{
+	return target > min ? (target < max ? target : max) : min;
+}
+
 
 
 // -------- [ 接口 ] --------

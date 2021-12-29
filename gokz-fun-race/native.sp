@@ -40,8 +40,8 @@ public int Native_Fun_Race_ResetRaceStatus(Handle plugin, int numParams)
 	gI_RaceCourse = 0;
 	gI_RacerCount = 0;
 	gI_RacerFinishCount = 0;
-	gI_RaceStartCountDown = 0;
 	gB_IsRacePause = false;
+	ResetCountDown();
 	for(int client = 1; client < MAXCLIENTS; client++)
 	{
 		gB_IsRacer[client] = false;
@@ -76,54 +76,6 @@ public int Native_Fun_Race_SetupRace(Handle plugin, int numParams)
 	GOKZ_PrintToChatAll(true, "%s ===== 输入!bm以参与比赛 =====", gC_Colors[Color_Green]);
 }
 
-// 倒计时定时任务
-// HUD显示还有点问题，得修修 
-// TODO
-public Action:Task_CountDown(Handle timer)
-{
-	// 如果比赛取消或者倒计时该结束了
-	if(gI_RaceStatus != RaceStatus_Running || gI_RaceStartCountDown == 0)
-	{
-		// 结束倒计时
-		return Plugin_Stop;
-	}
-
-	// 倒计时
-	gI_RaceStartCountDown--;
-
-	// 遍历参赛者
-	for(int racer = 1; racer < MAXCLIENTS; racer++)
-	{
-		if(IsValidClient(racer) && GOKZ_Fun_Race_IsRacer(racer))
-		{
-			// 显示倒计时HUD
-			SetHudTextParams(-1.0, 0.4, 2.0, gI_RaceStartCountDown * 17, 255 - (gI_RaceStartCountDown * 17), 0, 0, 0, 0.0, 0.0, 0.0);
-			ShowSyncHudText(racer, gH_CountdownSynchronizer, "%d", gI_RaceStartCountDown);
-			
-			// 播放声音
-			if(gI_RaceStartCountDown <= 6)
-			{
-				if(gI_RaceStartCountDown == 0)
-				{
-					ShowSyncHudText(racer, gH_CountdownSynchronizer, "开始!");
-					EmitSoundToAllAny(gC_CountDownZeroSound);
-				}
-				else if(gI_RaceStartCountDown == 6)
-				{
-					EmitSoundToAllAny(gC_CountDownReadySound);
-				}
-				else
-				{
-					EmitSoundToAllAny(gC_CountDownSound);
-				}
-			}
-		}
-	}
-	
-	// 继续倒计时
-	return Plugin_Continue;
-}
-
 public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
@@ -133,7 +85,6 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 	{
 		// 更新状态
 		gI_RaceStatus = RaceStatus_Running;
-		gI_RaceStartCountDown = 15;
 	
 		// 将所有参赛者集中至起点
 		for(int racer = 1; racer < MAXCLIENTS; racer++)
@@ -145,11 +96,11 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 				GOKZ_SetCoreOption(client, Option_Mode, gI_RaceMode);
 			}
 		}
-	
-		GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s启动了比赛! 比赛将在%d秒后开始.", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow], gI_RaceStartCountDown);
-		
+
 		// 启动倒计时
-		CreateTimer(1.0, Task_CountDown, 0, TIMER_REPEAT);
+		StartCountDown(15);
+	
+		GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s启动了比赛! 比赛将在%d秒后开始.", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow], RoundToFloor(GetCountDownRemain()));
 	}
 	else
 	{
