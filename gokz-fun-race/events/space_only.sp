@@ -32,7 +32,7 @@ void SpaceOnly_ResetStatus(int client)
  */
 bool CheckRaceType_SpaceOnly()
 {
-	return GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_SpaceOnly;
+	return GOKZ_Fun_Race_GetCurrentRaceStatus() == RaceStatus_Running && GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_SpaceOnly;
 }
 
 // -------- [ 事件 ] --------
@@ -43,11 +43,6 @@ void OnClientDisconnect_SpaceOnly(int client)
 
 void OnTimerStart_SpaceOnly(int client)
 {
-	if(!CheckRaceType_SpaceOnly())
-	{
-		return;
-	}
-	
 	SpaceOnly_ResetStatus(client);
 }
 
