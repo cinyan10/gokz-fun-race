@@ -7,7 +7,7 @@ float gF_Gravity = 300.0;
  */
 bool CheckRaceType_LowGravity()
 {
-	return GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_LowGravity;
+	return GOKZ_Fun_Race_GetCurrentRaceStatus() == RaceStatus_Running && GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_LowGravity;
 }
 
 // -------- [ 事件 ] --------
