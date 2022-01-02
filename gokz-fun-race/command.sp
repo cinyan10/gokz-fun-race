@@ -13,13 +13,7 @@ public Action CommandFunRaceTest(int client, int args)
 	// 仅OP可用
 	if(IsValidClient(client) && GetUserAdmin(client) != INVALID_ADMIN_ID)
 	{
-		gI_RaceStatus = RaceStatus_Running;
-		gI_RaceType = RaceType_SpaceOnly;
-		gB_IsRacer[client] = true;
-		gI_RacerCount = 1;
-		gI_RaceMode = 2;
-		StartCountDown(15);
-		GOKZ_PrintToChat(client, true, "测试 - 倒计时");
+		GOKZ_PrintToChat(client, true, "测试 - 空");
 	}
 	return Plugin_Handled;
 }

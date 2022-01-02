@@ -7,7 +7,7 @@ float gF_Gravity = 300.0;
  */
 bool CheckRaceType_LowGravity()
 {
-	return GOKZ_Fun_Race_GetCurrentRaceStatus() == RaceStatus_Running && GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_LowGravity;
+	return GOKZ_Fun_Race_GetCurrentRaceType() == RaceType_LowGravity;
 }
 
 // -------- [ 事件 ] --------
@@ -32,8 +32,13 @@ void OnClientPutInServer_LowGravity(int client)
 // -------- [ 钩子 ] --------
 public void SDKHook_OnClientPreThinkPost(int client)
 {
-	// 判断玩家状态、比赛项目
-	if (!IsPlayerAlive(client) || !CheckRaceType_LowGravity() || !GOKZ_Fun_Race_IsRacer(client) || GOKZ_Fun_Race_IsRacerFinished(client) || !GOKZ_GetTimerRunning(client))
+	if(GOKZ_Fun_Race_GetCurrentRaceStatus() != RaceStatus_Running || !CheckRaceType_LowGravity())
+	{
+		return;
+	}
+
+	// 判断玩家状态
+	if (!IsPlayerAlive(client) || !GOKZ_Fun_Race_IsRacer(client) || GOKZ_Fun_Race_IsRacerFinished(client) || !GOKZ_GetTimerRunning(client))
 	{
 		return;
 	}

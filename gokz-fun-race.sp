@@ -58,7 +58,6 @@ void PrecacheSounds()
 
 public void OnPluginStart()
 {
-
 	GOKZ_Fun_Race_ResetRaceStatus();
 
 	RegisterCommands();
@@ -67,6 +66,8 @@ public void OnPluginStart()
 
 	OnPluginStart_Menu();
 	OnPluginStart_CountDown();
+
+	GOKZ_PrintToChatAll(true, "娱乐比赛插件重载完成")
 }
 
 public void OnAllPluginsLoaded()
