@@ -27,6 +27,7 @@ enum RaceStatus:
 enum RaceType:
 {
 	RaceType_None = 0, // 当前无比赛
+	RaceType_Normal, // 无特殊规定
 	RaceType_LeftHand, // 左手KZ
 	RaceType_LowGravity, // 低重力
 	RaceType_Relay, // 接力赛
@@ -39,6 +40,7 @@ enum RaceType:
 // 比赛项目名称
 stock char gC_RaceTypeName[RACETYPE_COUNT][20] = {
 	"无",
+	"正常",
 	"左手KZ",
 	"低重力",
 	"接力赛",
@@ -100,8 +102,10 @@ native void GOKZ_Fun_Race_ResetRaceStatus();
 	* @param client 操作者
 	* @param raceType 比赛项目
 	* @param course 比赛关卡
+	* @param mode 比赛模式
+	* @param allowCheckpoint 允许存点
 	*/
-native void GOKZ_Fun_Race_SetupRace(int client, RaceType raceType, int course, int mode);
+native void GOKZ_Fun_Race_SetupRace(int client, RaceType raceType, int course, int mode, bool allowCheckpoint);
 
 /**
 	* 开始比赛
@@ -142,8 +146,9 @@ native void GOKZ_Fun_Race_ResumeRace(int client);
 /**
 	* 完成比赛
 	* @param client 玩家
+	* @param time 用时
  */
-native void GOKZ_Fun_Race_FinishRace(int client);
+native void GOKZ_Fun_Race_FinishRace(int client, float time);
 
 /**
 	* 比赛弃权

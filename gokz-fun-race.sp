@@ -15,10 +15,12 @@ int gI_RaceCourse; // 当前比赛关卡
 int gI_RaceMode; // 当前比赛模式
 int gI_RacerCount; // 当前比赛参赛人数
 int gI_RacerFinishCount; // 当前比赛完赛人数
+bool gB_AllowCheckpoint; // 当前比赛是否允许存点
 bool gB_IsRacePause; // 当前比赛暂停状态
 bool gB_IsRacer[MAXCLIENTS]; // 玩家参赛状态
+bool gB_IsRacerStarted[MAXCLIENTS]; // 玩家是否已经按过开始
 bool gB_IsRacerFinished[MAXCLIENTS]; // 玩家完赛状态
-char gC_RacerRank[MAXCLIENTS][64]; // 玩家排名
+char gC_RacerRank[MAXCLIENTS][128]; // 玩家排名
 
 
 #include "gokz-fun-race/events/space_only.sp"
@@ -33,7 +35,7 @@ char gC_RacerRank[MAXCLIENTS][64]; // 玩家排名
 public Plugin:myinfo = 
 {
 	name = "GOKZ Fun Race",
-	author = "Nep & One",
+	author = "Nep & 1",
 	description = "Create for funny racing with community",
 	version = "1.0",
 	url = "https://gokz.cn"
@@ -47,6 +49,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 public OnMapStart() {
 	PrecacheSounds();
+	GOKZ_Fun_Race_ResetRaceStatus();
 }
 
 void PrecacheSounds()
@@ -70,26 +73,9 @@ public void OnPluginStart()
 	GOKZ_PrintToChatAll(true, "娱乐比赛插件重载完成")
 }
 
-public void OnAllPluginsLoaded()
-{
-	DisableGOKZSettingEnforcer();
-}
-
-void DisableGOKZSettingEnforcer()
-{
-	ConVar convar_gokz_enforcer = FindConVar("gokz_settings_enforcer");
-	if(convar_gokz_enforcer == null)
-	{
-		PrintToServer("Can't find cvar 'gokz_settings_enforcer'.");
-	}
-	else
-	{
-		SetConVarBool(convar_gokz_enforcer, false);
-	}
-}
-
 public void OnClientPutInServer(int client)
 {
+	OnClientPutInServer_Menu(client);
 	OnClientPutInServer_LowGravity(client);
 }
 
@@ -127,6 +113,12 @@ public Action GOKZ_OnTimerStart(int client, int course)
 	// 如果当前正在比赛 且 该玩家为参赛者
 	if(gI_RaceStatus == RaceStatus_Running && gB_IsRacer[client])
 	{
+		// 如果 已经开始过计时 且 还没有完成比赛
+		if(!gB_IsRacerFinished[client] && gB_IsRacerStarted[client])
+		{
+			return Plugin_Stop;
+		}
+
 		// 如果模式不对
 		if(GOKZ_GetCoreOption(client, Option_Mode) != gI_RaceMode)
 		{
@@ -140,21 +132,48 @@ public Action GOKZ_OnTimerStart(int client, int course)
 			// 禁止开始
 			return Plugin_Stop;
 		}
+
+		// 若能开始 则让各个项目开始处理事件
+		OnTimerStart_SpaceOnly(client);
+		
+		// 更新玩家是否已经开始计时
+		gB_IsRacerStarted[client] = true;
 	}
-	
-	// 若能开始 则让各个项目开始处理事件
-	OnTimerStart_SpaceOnly(client);
+	return Plugin_Continue;
+}
+
+public void GOKZ_OnTimerStopped(int client)
+{
+	// 如果比赛进行中 且 没有完成比赛
+	if(gI_RaceStatus == RaceStatus_Running && GetCountDownRemain() == 0 && gB_IsRacer[client] && !gB_IsRacerFinished[client])
+	{
+		GOKZ_Fun_Race_SurrenderRace(client);
+	}
+}
+
+public Action GOKZ_OnMakeCheckpoint(int client)
+{
+	// 如果比赛进行中 且 没有完成比赛
+	if(gI_RaceStatus == RaceStatus_Running && gB_IsRacer[client] && !gB_IsRacerFinished[client])
+	{
+		// 如果不允许存点
+		if(!gB_AllowCheckpoint)
+		{
+			GOKZ_PlayErrorSound(client);
+			GOKZ_PrintToChat(client, true, "%c当前比赛不允许存点", gC_Colors[Color_Red]);
+			return Plugin_Stop;
+		}
+	}
 	return Plugin_Continue;
 }
 
 // 玩家结束计时时触发
 public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsUsed){
 	// 如果当前是比赛状态
-	if(gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
+	if(gI_RaceStatus == RaceStatus_Running && gB_IsRacer[client])
 	{
-
 		GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成了比赛! %s[%s | %d TP]", gC_Colors[Color_Green], gC_Colors[Color_Purple], client, gC_Colors[Color_Green], gC_Colors[Color_Yellow], GOKZ_FormatTime(time), teleportsUsed);
-		GOKZ_Fun_Race_FinishRace(client);
+		GOKZ_Fun_Race_FinishRace(client, time);
 		GOKZ_StopTimer(client);
 		return Plugin_Stop;
 	}

@@ -41,11 +41,13 @@ public int Native_Fun_Race_ResetRaceStatus(Handle plugin, int numParams)
 	gI_RacerCount = 0;
 	gI_RacerFinishCount = 0;
 	gB_IsRacePause = false;
+	gB_AllowCheckpoint = true;
 	ResetCountDown();
 	for(int client = 1; client < MAXCLIENTS; client++)
 	{
 		gB_IsRacer[client] = false;
 		gB_IsRacerFinished[client] = false;
+		gB_IsRacerStarted[client] = false;
 		gC_RacerRank[client] = "";
 	}
 }
@@ -69,10 +71,11 @@ public int Native_Fun_Race_SetupRace(Handle plugin, int numParams)
 	gI_RaceCourse = GetNativeCell(3);
 	gI_RaceMode = GetNativeCell(4);
 	gI_RaceStatus = RaceStatus_Waiting;
+	gB_AllowCheckpoint = GetNativeCell(5);
 	GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s发起了比赛!", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow]);
 	GOKZ_PrintToChatAll(true, "%s - 比赛项目: %s%s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_RaceTypeName[gI_RaceType]);
 	GOKZ_PrintToChatAll(true, "%s - 比赛关卡: %s%d", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gI_RaceCourse);
-	GOKZ_PrintToChatAll(true, "%s - 比赛模式: %s%s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_ModeNames[gI_RaceMode]);
+	GOKZ_PrintToChatAll(true, "%s - 比赛模式: %s%s | %s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_ModeNames[gI_RaceMode], gB_AllowCheckpoint ? "存点" : "裸跳");
 	GOKZ_PrintToChatAll(true, "%s ===== 输入!bm以参与比赛 =====", gC_Colors[Color_Green]);
 }
 
@@ -85,6 +88,23 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 	{
 		// 更新状态
 		gI_RaceStatus = RaceStatus_Running;
+
+		if(gI_RaceType == RaceType_LowGravity)
+		{
+			// 禁用变量检查
+			ConVar convar_gokz_enforcer = FindConVar("gokz_settings_enforcer");
+			if(convar_gokz_enforcer == null)
+			{
+				PrintToServer("Can't find cvar 'gokz_settings_enforcer'.");
+			}
+			else
+			{
+				SetConVarBool(convar_gokz_enforcer, false);
+			}
+		}
+
+		// 启动倒计时
+		StartCountDown(15);
 	
 		// 将所有参赛者集中至起点
 		for(int racer = 1; racer < MAXCLIENTS; racer++)
@@ -96,9 +116,6 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 				GOKZ_SetCoreOption(client, Option_Mode, gI_RaceMode);
 			}
 		}
-
-		// 启动倒计时
-		StartCountDown(15);
 	
 		GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s启动了比赛! 比赛将在%d秒后开始.", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow], RoundToFloor(GetCountDownRemain()));
 	}
@@ -119,7 +136,17 @@ public int Native_Fun_Race_EndRace(Handle plugin, int numParams)
 	// 输出比赛排名
 	for(int rank = 1; rank <= gI_RacerFinishCount; rank++)
 	{
-		GOKZ_PrintToChatAll(true, "%s#%d %s- %s%s", gC_Colors[Color_Purple], rank, gC_Colors[Color_Grey], gC_Colors[Color_Purple], gC_RacerRank[rank]);
+		GOKZ_PrintToChatAll(true, gC_RacerRank[rank]);
+	}
+	for(int racer = 1; racer < MAXCLIENTS; racer++)
+	{
+		if(!gB_IsRacer[racer] || gB_IsRacerFinished[racer])
+		{
+			continue;
+		}
+		char name[64];
+		GetClientName(client, name, sizeof(name));
+		GOKZ_PrintToChatAll(true, "%s#- %s- %s%s", gC_Colors[Color_Purple], gC_Colors[Color_Grey], gC_Colors[Color_Purple], name);
 	}
 
 	// 如果是人为结束比赛
@@ -198,7 +225,7 @@ void CheckRemainRacers()
 			if(IsValidClient(client) && gB_IsRacer[client] && !gB_IsRacerFinished[client])
 			{
 				// 给排名
-				GOKZ_Fun_Race_FinishRace(client);
+				GOKZ_Fun_Race_FinishRace(client, -1.0);
 				break;
 			}
 		}
@@ -209,16 +236,24 @@ void CheckRemainRacers()
 public int Native_Fun_Race_FinishRace(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
+	float time = GetNativeCell(2);
 	// 更新状态
 	gB_IsRacerFinished[client] = true;
 	gI_RacerFinishCount++;
 	// 记录玩家名字和名次
 	char name[64];
 	GetClientName(client, name, sizeof(name));
-	gC_RacerRank[gI_RacerFinishCount] = name;
 
-	GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成了比赛! %s[#%d / %d]", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow], gC_Colors[Color_Grey], gI_RacerFinishCount, gI_RacerCount);
+	if(time > -1)
+	{
+		Format(gC_RacerRank[gI_RacerFinishCount], 128, "%s#%d %s- %s%s[%s]", gC_Colors[Color_Purple], gI_RacerFinishCount, gC_Colors[Color_Grey], gC_Colors[Color_Purple], name, GOKZ_FormatTime(time));
 	
+		GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成了比赛! %s[#%d / %d]", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow], gC_Colors[Color_Grey], gI_RacerFinishCount, gI_RacerCount);	
+	}
+	else
+	{
+		Format(gC_RacerRank[gI_RacerFinishCount], 128, "%s#%d %s- %s%s[-]", gC_Colors[Color_Purple], gI_RacerFinishCount, gC_Colors[Color_Grey], gC_Colors[Color_Purple], name);
+	}
 	// 检查剩余参赛者数量
 	CheckRemainRacers();
 }

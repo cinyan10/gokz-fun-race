@@ -6,6 +6,8 @@ Menu gH_FunRaceChooseModeMenu;
 RaceType gI_RaceTypeChoose[MAXCLIENTS];
 int gI_RaceCourseChoose[MAXCLIENTS];
 int gI_RaceModeChoose[MAXCLIENTS];
+bool gB_RaceCheckpointEnable[MAXCLIENTS];
+bool gB_RaceDeglobalConfirm[MAXCLIENTS];
 
 
 
@@ -47,16 +49,25 @@ public void OnPluginStart_Menu()
 		AddMenuItem(gH_FunRaceChooseModeMenu, IntToStringEx(mode), gC_ModeNames[mode]);
 	}
 
-	// 初始化变量
-	for(int client = 1; client < MAXCLIENTS; client++)
+	// 初始化
+	for(int client = 0; client < MAXCLIENTS; client++)
 	{
-		if(IsValidClient(client))
-		{
-			gI_RaceTypeChoose[client] = RaceType_SpaceOnly;
-			gI_RaceCourseChoose[client] = 0;
-			gI_RaceModeChoose[client] = 2;
-		}
+		ResetClientStatus_Menu(client);
 	}
+}
+
+void ResetClientStatus_Menu(int client)
+{
+	gI_RaceTypeChoose[client] = RaceType_SpaceOnly;
+	gI_RaceCourseChoose[client] = 0;
+	gI_RaceModeChoose[client] = 2;
+	gB_RaceCheckpointEnable[client] = true;
+	gB_RaceDeglobalConfirm[client] = false;
+}
+
+void OnClientPutInServer_Menu(int client)
+{
+	ResetClientStatus_Menu(client);
 }
 
 
@@ -114,6 +125,10 @@ void OpenFunRaceSetupMenu(int client)
 	Format(displayName, sizeof(displayName), "比赛模式 - %s", gC_ModeNames[gI_RaceModeChoose[client]]);
 	AddMenuItem(menu, "mode", displayName);
 
+	// 获取是否裸跳
+	Format(displayName, sizeof(displayName), "允许存点 - %s", gB_RaceCheckpointEnable[client] ? "是" : "否");
+	AddMenuItem(menu, "checkpoint", displayName);
+
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
@@ -165,6 +180,10 @@ FunRaceChooseEventMenuHandler(Handle:menu, MenuAction:action, client, select)
 		gI_RaceTypeChoose[client] = view_as<RaceType>(StringToInt(info));
 		OpenFunRaceMenu(client);
 	}
+	else if(action == MenuAction_Cancel)
+	{
+		OpenFunRaceMenu(client);
+	}
 }
 
 // 选择比赛关卡菜单
@@ -177,6 +196,10 @@ FunRaceChooseCourseMenuHandler(Handle:menu, MenuAction:action, client, select)
 		gI_RaceCourseChoose[client] = StringToInt(info);
 		OpenFunRaceMenu(client);
 	}
+	else if(action == MenuAction_Cancel)
+	{
+		OpenFunRaceMenu(client);
+	}
 }
 
 // 选择比赛模式菜单
@@ -187,6 +210,10 @@ FunRaceChooseModeMenuHandler(Handle:menu, MenuAction:action, client, select)
 		char info[16];
 		GetMenuItem(menu, select, info, sizeof(info));
 		gI_RaceModeChoose[client] = StringToInt(info);
+		OpenFunRaceMenu(client);
+	}
+	else if(action == MenuAction_Cancel)
+	{
 		OpenFunRaceMenu(client);
 	}
 }
@@ -212,7 +239,7 @@ FunRaceMainMenuHandler(Handle:menu, MenuAction:action, client, select)
 			// 如果选择发起比赛
 			if(!strcmp(info, "setup"))
 			{
-				GOKZ_Fun_Race_SetupRace(client, gI_RaceTypeChoose[client], gI_RaceCourseChoose[client], gI_RaceModeChoose[client]);
+				GOKZ_Fun_Race_SetupRace(client, gI_RaceTypeChoose[client], gI_RaceCourseChoose[client], gI_RaceModeChoose[client], gB_RaceCheckpointEnable[client]);
 				OpenFunRaceMenu(client);
 			}
 			else if(!strcmp(info, "event"))
@@ -226,6 +253,11 @@ FunRaceMainMenuHandler(Handle:menu, MenuAction:action, client, select)
 			else if(!strcmp(info, "mode"))
 			{
 				DisplayMenu(gH_FunRaceChooseModeMenu, client, MENU_TIME_FOREVER);
+			}
+			else if(!strcmp(info, "checkpoint"))
+			{
+				gB_RaceCheckpointEnable[client] = !gB_RaceCheckpointEnable[client];
+				OpenFunRaceMenu(client);
 			}
 		}
 	}
@@ -247,14 +279,22 @@ FunRaceStartMenuHandler(Handle:menu, MenuAction:action, client, select)
 			GetMenuItem(menu, select, info, sizeof(info));
 			if(!strcmp(info, "start"))
 			{
-				GOKZ_Fun_Race_StartRace(client);
+				if(gI_RaceTypeChoose[client] == RaceType_LowGravity && !gB_RaceDeglobalConfirm[client])
+				{
+					GOKZ_PrintToChat(client, true, "%s该项目会禁用GOKZ的玩家变量检查，服务器将暂时无法上传全球记录，换图后才会恢复，请进行确认", gC_Colors[Color_Red]);
+					gB_RaceDeglobalConfirm[client] = true;
+				}
+				else
+				{
+					GOKZ_Fun_Race_StartRace(client);
+				}
 			}
 			else if(!strcmp(info, "cancel"))
 			{
 				GOKZ_Fun_Race_EndRace(client, "比赛取消");
-				OpenFunRaceMenu(client);
 			}
 		}
+		OpenFunRaceMenu(client);
 	}
 }
 
