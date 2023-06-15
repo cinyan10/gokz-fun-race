@@ -1,4 +1,6 @@
 
+Menu gH_ZoneManageMenu;
+
 Menu gH_FunRaceChooseEventMenu;
 Menu gH_FunRaceChooseCourseMenu;
 Menu gH_FunRaceChooseModeMenu;
@@ -7,6 +9,7 @@ RaceType gI_RaceTypeChoose[MAXCLIENTS];
 int gI_RaceCourseChoose[MAXCLIENTS];
 int gI_RaceModeChoose[MAXCLIENTS];
 bool gB_RaceCheckpointEnable[MAXCLIENTS];
+bool gB_RaceRespawnEnable[MAXCLIENTS];
 bool gB_RaceDeglobalConfirm[MAXCLIENTS];
 
 
@@ -15,6 +18,12 @@ bool gB_RaceDeglobalConfirm[MAXCLIENTS];
 // -------- [ 事件 ] --------
 public void OnPluginStart_Menu()
 {
+	// 初始化区域管理菜单
+	gH_ZoneManageMenu = CreateMenu(ZoneManageMenuHandler);
+	SetMenuTitle(gH_ZoneManageMenu, "==[ 比赛区域 ]==");
+	AddMenuItem(gH_ZoneManageMenu, "create", "创建区域");
+	AddMenuItem(gH_ZoneManageMenu, "select", "查看区域");
+
 	// 初始化比赛项目选择菜单
 	gH_FunRaceChooseEventMenu = CreateMenu(FunRaceChooseEventMenuHandler);
 	SetMenuTitle(gH_FunRaceChooseEventMenu, "==[ 项目选择 ]==");
@@ -27,7 +36,7 @@ public void OnPluginStart_Menu()
 
 	gH_FunRaceChooseCourseMenu = CreateMenu(FunRaceChooseCourseMenuHandler);
 	SetMenuTitle(gH_FunRaceChooseEventMenu, "==[ 关卡选择 ]==");
-	// 关卡检测有点问题
+	// 关卡检测有点问题 不启用
 
 	// int course = 0;
 	// while(GOKZ_GetCourseRegistered(course))
@@ -56,12 +65,16 @@ public void OnPluginStart_Menu()
 	}
 }
 
+
+
+// -------- [ 函数 ] --------
 void ResetClientStatus_Menu(int client)
 {
-	gI_RaceTypeChoose[client] = RaceType_SpaceOnly;
+	gI_RaceTypeChoose[client] = RaceType_Normal;
 	gI_RaceCourseChoose[client] = 0;
 	gI_RaceModeChoose[client] = 2;
 	gB_RaceCheckpointEnable[client] = true;
+	gB_RaceRespawnEnable[client] = true;
 	gB_RaceDeglobalConfirm[client] = false;
 }
 
@@ -69,6 +82,7 @@ void OnClientPutInServer_Menu(int client)
 {
 	ResetClientStatus_Menu(client);
 }
+
 
 
 /**
@@ -106,6 +120,7 @@ void OpenFunRaceSetupMenu(int client)
 	Menu menu = CreateMenu(FunRaceMainMenuHandler);
 	SetMenuTitle(menu, "==[ 趣味比赛 ]==");
 	AddMenuItem(menu, "setup", "发起比赛");
+	AddMenuItem(menu, "ssp", "设置起点");
 
 	// 获取比赛项目配置
 	char displayName[128];
@@ -128,6 +143,10 @@ void OpenFunRaceSetupMenu(int client)
 	// 获取是否裸跳
 	Format(displayName, sizeof(displayName), "允许存点 - %s", gB_RaceCheckpointEnable[client] ? "是" : "否");
 	AddMenuItem(menu, "checkpoint", displayName);
+
+	// 获取是否允许回起点
+	Format(displayName, sizeof(displayName), "允许回起点 - %s", gB_RaceRespawnEnable[client] ? "是" : "否");
+	AddMenuItem(menu, "spawn", displayName);
 
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
@@ -165,10 +184,71 @@ void OpenFunRaceRunningMenu(int client)
 	DisplayMenu(menu, client, MENU_TIME_FOREVER);
 }
 
+/**
+  * 打开比赛区域菜单
+  */
+void OpenZoneMenu(int client)
+{
+	DisplayMenu(gH_ZoneManageMenu, client, MENU_TIME_FOREVER);
+}
+
+  
+void StartZoneCreation(int client)
+{
+	Menu menu = CreateMenu(ZoneCreateMenuHandler);
+	SetMenuTitle(menu, "==[ 创建区域 ]==");
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+void CancelZoneCreation(int client)
+{
+
+}
 
 
 
 // -------- [ 菜单 ] --------
+ZoneManageMenuHandler(Handle:menu, MenuAction:action, client, select)
+{
+	// 如果是选择了某个项目
+	if(action == MenuAction_Select)
+	{
+		char info[16];
+		GetMenuItem(menu, select, info, sizeof(info));
+		// 如果选择创建区域
+		if(!strcmp(info, "create"))
+		{
+			GOKZ_PrintToChat(client, true, "新建比赛区域");
+		}
+		else if(!strcmp(info, "select"))
+		{ // 如果选择查看区域
+			GOKZ_PrintToChat(client, true, "获取比赛区域中...");
+		}
+	}
+}
+
+ZoneCreateMenuHandler(Handle:menu, MenuAction:action, client, select)
+{
+	// 如果是选择了某个项目
+	if(action == MenuAction_Select)
+	{
+		char info[16];
+		GetMenuItem(menu, select, info, sizeof(info));
+		// 如果选择创建区域
+		if(!strcmp(info, "create"))
+		{
+
+		}
+		else if(!strcmp(info, "select"))
+		{ // 如果选择查看区域
+
+		}
+	}
+	else if(action == MenuAction_Cancel)
+	{
+		OpenFunRaceMenu(client);
+	}
+}
 
 // 选择比赛项目菜单
 FunRaceChooseEventMenuHandler(Handle:menu, MenuAction:action, client, select)
@@ -239,7 +319,12 @@ FunRaceMainMenuHandler(Handle:menu, MenuAction:action, client, select)
 			// 如果选择发起比赛
 			if(!strcmp(info, "setup"))
 			{
-				GOKZ_Fun_Race_SetupRace(client, gI_RaceTypeChoose[client], gI_RaceCourseChoose[client], gI_RaceModeChoose[client], gB_RaceCheckpointEnable[client]);
+				GOKZ_Fun_Race_SetupRace(client, gI_RaceTypeChoose[client], gI_RaceCourseChoose[client], gI_RaceModeChoose[client], gB_RaceCheckpointEnable[client], gB_RaceRespawnEnable[client]);
+				OpenFunRaceMenu(client);
+			}
+			else if(!strcmp(info, "ssp"))
+			{
+				GOKZ_Fun_Race_SetStartPosition(client);
 				OpenFunRaceMenu(client);
 			}
 			else if(!strcmp(info, "event"))
@@ -257,6 +342,11 @@ FunRaceMainMenuHandler(Handle:menu, MenuAction:action, client, select)
 			else if(!strcmp(info, "checkpoint"))
 			{
 				gB_RaceCheckpointEnable[client] = !gB_RaceCheckpointEnable[client];
+				OpenFunRaceMenu(client);
+			}
+			else if(!strcmp(info, "checkpoint"))
+			{
+				gB_RaceRespawnEnable[client] = !gB_RaceRespawnEnable[client];
 				OpenFunRaceMenu(client);
 			}
 		}

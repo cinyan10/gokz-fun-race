@@ -9,6 +9,8 @@ void CreateNatives()
 	CreateNative("GOKZ_Fun_Race_SetupRace", Native_Fun_Race_SetupRace);
 	CreateNative("GOKZ_Fun_Race_StartRace", Native_Fun_Race_StartRace);
 	CreateNative("GOKZ_Fun_Race_EndRace", Native_Fun_Race_EndRace);
+	CreateNative("GOKZ_Fun_Race_SetStartPosition", Native_Fun_Race_SetStartPosition);
+	CreateNative("GOKZ_Fun_Race_ResetRacerStartPosition", Native_Fun_Race_ResetRacerStartPosition);
 	CreateNative("GOKZ_Fun_Race_CheckPause", Native_Fun_Race_CheckPause);
 	CreateNative("GOKZ_Fun_Race_PauseRace", Native_Fun_Race_PauseRace);
 	CreateNative("GOKZ_Fun_Race_ResumeRace", Native_Fun_Race_ResumeRace);
@@ -42,6 +44,8 @@ public int Native_Fun_Race_ResetRaceStatus(Handle plugin, int numParams)
 	gI_RacerFinishCount = 0;
 	gB_IsRacePause = false;
 	gB_AllowCheckpoint = true;
+	gB_AllowRespawn = true;
+	gB_AllowRespawn = true;
 	ResetCountDown();
 	for(int client = 1; client < MAXCLIENTS; client++)
 	{
@@ -65,26 +69,34 @@ public any Native_Fun_Race_GetCurrentRaceStatus(Handle plugin, int numParams)
 public int Native_Fun_Race_SetupRace(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
-	// 更新状态
-	GOKZ_Fun_Race_ResetRaceStatus();
-	gI_RaceType = view_as<RaceType>(GetNativeCell(2));
-	gI_RaceCourse = GetNativeCell(3);
-	gI_RaceMode = GetNativeCell(4);
-	gI_RaceStatus = RaceStatus_Waiting;
-	gB_AllowCheckpoint = GetNativeCell(5);
-	GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s发起了比赛!", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow]);
-	GOKZ_PrintToChatAll(true, "%s - 比赛项目: %s%s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_RaceTypeName[gI_RaceType]);
-	GOKZ_PrintToChatAll(true, "%s - 比赛关卡: %s%d", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gI_RaceCourse);
-	GOKZ_PrintToChatAll(true, "%s - 比赛模式: %s%s | %s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_ModeNames[gI_RaceMode], gB_AllowCheckpoint ? "存点" : "裸跳");
-	GOKZ_PrintToChatAll(true, "%s ===== 输入!bm以参与比赛 =====", gC_Colors[Color_Green]);
+	if (!FloatCompare(gF_StartPosition[0], 0.0) && !FloatCompare(gF_StartPosition[1], 0.0) && !FloatCompare(gF_StartPosition[2], 0.0))
+	{
+		GOKZ_PrintToChat(client, true, "%s尚未设置开始地点! 无法开始比赛", gC_Colors[Color_Red]);
+		GOKZ_PlayErrorSound(client);
+	} 
+	else
+	{
+		// 更新状态
+		GOKZ_Fun_Race_ResetRaceStatus();
+		gI_RaceType = view_as<RaceType>(GetNativeCell(2));
+		gI_RaceCourse = GetNativeCell(3);
+		gI_RaceMode = GetNativeCell(4);
+		gI_RaceStatus = RaceStatus_Waiting;
+		gB_AllowCheckpoint = GetNativeCell(5);
+		gB_AllowRespawn = GetNativeCell(6);
+		GOKZ_PrintToChatAll(true, "%s管理员 %s%N %s发起了比赛!", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], client, gC_Colors[Color_Yellow]);
+		GOKZ_PrintToChatAll(true, "%s - 比赛项目: %s%s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_RaceTypeName[gI_RaceType]);
+		GOKZ_PrintToChatAll(true, "%s - 比赛关卡: %s%d", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gI_RaceCourse);
+		GOKZ_PrintToChatAll(true, "%s - 比赛模式: %s%s | %s", gC_Colors[Color_Yellow], gC_Colors[Color_Purple], gC_ModeNames[gI_RaceMode], gB_AllowCheckpoint ? "存点" : "裸跳");
+		GOKZ_PrintToChatAll(true, "%s ===== 输入!bm以参与比赛 =====", gC_Colors[Color_Green]);
+	}
 }
 
 public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 
-	// 如果参赛人数足够
-	if(gI_RacerCount > 1)
+	if(gI_RacerCount > 1) // 如果参赛人数足够
 	{
 		// 更新状态
 		gI_RaceStatus = RaceStatus_Running;
@@ -112,8 +124,10 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 			if(GOKZ_Fun_Race_IsRacer(racer))
 			{
 				GOKZ_StopTimer(racer);
+				GOKZ_Fun_Race_ResetRacerStartPosition(racer, 0.0, 0.0, 0.0);
 				GOKZ_TeleportToStart(racer);
 				GOKZ_SetCoreOption(client, Option_Mode, gI_RaceMode);
+				GOKZ_Fun_Race_CheckPause(racer);
 			}
 		}
 	
@@ -157,11 +171,44 @@ public int Native_Fun_Race_EndRace(Handle plugin, int numParams)
 	GOKZ_PrintToChatAll(true, "%s%s, 比赛结束! ", gC_Colors[Color_Yellow], reason);
 }
 
+public int Native_Fun_Race_SetStartPosition(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	if (IsPlayerAlive(client) && Movement_GetOnGround(client))
+	{
+		GetClientAbsOrigin(client, gF_StartPosition);
+		GetClientAbsAngles(client, gF_StartAngle);
+		GOKZ_PrintToChat(client, true, "%s已设置比赛起点", gC_Colors[Color_Yellow]);
+	}
+	else
+	{
+		GOKZ_PrintToChat(client, true, "%s请站立于地面上设置比赛起点", gC_Colors[Color_Red]);
+		GOKZ_PlayErrorSound(client);
+	}
+}
+
+public int Native_Fun_Race_ResetRacerStartPosition(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	float x = GetNativeCell(2);
+	float y = GetNativeCell(3);
+	float z = GetNativeCell(4);
+	if (GOKZ_Fun_Race_GetCurrentRaceStatus() == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client) && !gB_IsRacerFinished[client])
+	{
+		if (FloatCompare(x, gF_StartPosition[0]) || FloatCompare(y, gF_StartPosition[1]) || FloatCompare(z, gF_StartPosition[2]))
+		{
+			GOKZ_SetStartPosition(client, StartPositionType_Custom, gF_StartPosition, gF_StartAngle);
+			GOKZ_SetVirtualButtonPosition(client, gF_StartPosition, gI_RaceCourse, true);
+			GOKZ_PrintToChat(client, true, "%s已重置为比赛起点", gC_Colors[Color_Yellow]);
+		}
+	}
+}
+
 public int Native_Fun_Race_CheckPause(Handle plugin, int numParams)
 {
-	if(gB_IsRacePause)
+	int client = GetNativeCell(1);
+	if(gB_IsRacePause || (GetCountDownRemain() > 0.0 && GOKZ_Fun_Race_IsRacer(client)))
 	{
-		int client = GetNativeCell(1);
 		if(gB_IsRacer[client] && !gB_IsRacerFinished[client] && !GOKZ_GetPaused(client) && Movement_GetOnGround(client))
 		{
 			Movement_SetVelocity(client, view_as<float>( { 0.0, 0.0, 0.0 } ));
@@ -226,6 +273,7 @@ void CheckRemainRacers()
 			{
 				// 给排名
 				GOKZ_Fun_Race_FinishRace(client, -1.0);
+				GOKZ_StopTimer(client);
 				break;
 			}
 		}

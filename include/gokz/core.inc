@@ -42,6 +42,16 @@ enum StartPositionType:
 	STARTPOSITIONTYPE_COUNT
 };
 
+enum CourseTimerType:
+{
+	CourseTimerType_None,
+	CourseTimerType_Default,
+	CourseTimerType_Button,
+	CourseTimerType_ZoneLegacy,
+	CourseTimerType_ZoneNew,
+	CourseTimerType_COUNT
+};
+
 enum OptionProp:
 {
 	OptionProp_Cookie = 0, 
@@ -62,14 +72,14 @@ enum Option:
 {
 	OPTION_INVALID = -1, 
 	Option_Mode, 
-	Option_Style, 
-	Option_AutoRestart, 
-	Option_CheckpointMessages, 
+	Option_Style,
+	Option_CheckpointMessages,
 	Option_CheckpointSounds, 
 	Option_TeleportSounds, 
 	Option_ErrorSounds, 
 	Option_VirtualButtonIndicators, 
 	Option_TimerButtonZoneType,
+	Option_Safeguard,
 	OPTION_COUNT
 };
 
@@ -85,13 +95,6 @@ enum
 {
 	Style_Normal = 0, 
 	STYLE_COUNT
-};
-
-enum
-{
-	AutoRestart_Disabled = 0, 
-	AutoRestart_Enabled, 
-	AUTORESTART_COUNT
 };
 
 enum
@@ -139,6 +142,14 @@ enum
 
 enum
 {
+	Safeguard_Disabled = 0,
+	Safeguard_EnabledNUB,
+	Safeguard_EnabledPRO,
+	SAFEGUARD_COUNT
+}
+
+enum
+{
 	ModeCVar_Accelerate = 0, 
 	ModeCVar_AccelerateUseWeaponSpeed, 
 	ModeCVar_AirAccelerate, 
@@ -166,21 +177,66 @@ enum
 	MODECVAR_COUNT
 };
 
+// NOTE: gokz-core/map/entlump.sp
+enum EntlumpTokenType
+{
+	EntlumpTokenType_OpenBrace,  // {
+	EntlumpTokenType_CloseBrace, // }
+	EntlumpTokenType_Identifier, // everything that's inside quotations
+	EntlumpTokenType_Unknown,
+	EntlumpTokenType_EndOfStream
+};
+
+// NOTE: gokz-core/map/triggers.sp
+// NOTE: corresponds to climb_teleport_type in kz_mapping_api.fgd
+enum TeleportType
+{
+	TeleportType_Invalid = -1,
+	TeleportType_Normal,
+	TeleportType_MultiBhop,
+	TeleportType_SingleBhop,
+	TeleportType_SequentialBhop,
+	TELEPORTTYPE_COUNT
+};
+
+enum TriggerType
+{
+	TriggerType_Invalid = 0,
+	TriggerType_Teleport,
+	TriggerType_Antibhop
+};
+
 
 
 // =====[ CONSTANTS ]=====
 
-#define GOKZ_MAX_CHECKPOINTS 32
+#define GOKZ_CHECKPOINT_VERSION 1
+#define GOKZ_MAX_CHECKPOINTS 2048
 #define GOKZ_MAX_COURSES 100
 
-#define GOKZ_BHOP_NO_CHECKPOINT_TIME 0.11
+#define GOKZ_BHOP_NO_CHECKPOINT_TIME 0.15
+#define GOKZ_MULT_NO_CHECKPOINT_TIME 0.11
 #define GOKZ_LADDER_NO_CHECKPOINT_TIME 1.5
 #define GOKZ_PAUSE_COOLDOWN 1.0
 #define GOKZ_TIMER_START_NO_TELEPORT_TICKS 4
 #define GOKZ_TIMER_START_GROUND_TICKS 4
 #define GOKZ_TIMER_START_NOCLIP_TICKS 4
+#define GOKZ_JUMPSTATS_NOCLIP_RESET_TICKS 4
 #define GOKZ_TIMER_SOUND_COOLDOWN 0.15
 #define GOKZ_VIRTUAL_BUTTON_USE_DETECTION_TIME 2.0
+#define GOKZ_TURNBIND_COOLDOWN 0.3
+
+#define GOKZ_MAPPING_API_VERSION_NONE 0 // the map doesn't have a mapping api version
+#define GOKZ_MAPPING_API_VERSION 1
+
+#define GOKZ_ANTI_BHOP_TRIGGER_DEFAULT_DELAY 0.2
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_TYPE TeleportType_Normal
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_DELAY 0.0
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_USE_DEST_ANGLES true
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_RESET_SPEED true
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_RELATIVE_DESTINATION false
+#define GOKZ_TELEPORT_TRIGGER_DEFAULT_REORIENT_PLAYER false
+#define GOKZ_TELEPORT_TRIGGER_BHOP_MIN_DELAY 0.08
 
 #define GOKZ_SOUND_CHECKPOINT "buttons/blip1.wav"
 #define GOKZ_SOUND_TELEPORT "buttons/blip1.wav"
@@ -194,6 +250,12 @@ enum
 #define GOKZ_END_BUTTON_NAME "climb_endbutton"
 #define GOKZ_BONUS_START_BUTTON_NAME_REGEX "^climb_bonus(\\d+)_startbutton$"
 #define GOKZ_BONUS_END_BUTTON_NAME_REGEX "^climb_bonus(\\d+)_endbutton$"
+#define GOKZ_ANTI_BHOP_TRIGGER_NAME "climb_anti_bhop"
+#define GOKZ_ANTI_CP_TRIGGER_NAME "climb_anti_checkpoint"
+#define GOKZ_ANTI_PAUSE_TRIGGER_NAME "climb_anti_pause"
+#define GOKZ_ANTI_JUMPSTAT_TRIGGER_NAME "climb_anti_jumpstat"
+#define GOKZ_BHOP_RESET_TRIGGER_NAME "climb_bhop_reset"
+#define GOKZ_TELEPORT_TRIGGER_NAME "climb_teleport"
 
 #define GOKZ_START_ZONE_NAME "climb_startzone"
 #define GOKZ_END_ZONE_NAME "climb_endzone"
@@ -210,6 +272,18 @@ enum
 #define GOKZ_OPTION_MAX_NAME_LENGTH 30
 #define GOKZ_OPTION_MAX_DESC_LENGTH 255
 #define GENERAL_OPTION_CATEGORY "General"
+
+// TODO: where do i put the defines?
+#define GOKZ_BSP_HEADER_IDENTIFIER (('P' << 24) | ('S' << 16) | ('B' << 8) | 'V')
+#define GOKZ_ENTLUMP_MAX_KEY 32
+#define GOKZ_ENTLUMP_MAX_VALUE 1024
+
+#define GOKZ_MAX_MAPTRIGGERS_ERROR_LENGTH 256
+
+#define CHAR_ESCAPE view_as<char>(27)
+
+#define GOKZ_SAFEGUARD_RESTART_MIN_DELAY 0.6
+#define GOKZ_SAFEGUARD_RESTART_MAX_DELAY 5.0
 
 stock char gC_TimeTypeNames[TIMETYPE_COUNT][] = 
 {
@@ -280,39 +354,39 @@ stock char gC_CoreOptionNames[OPTION_COUNT][] =
 {
 	"GOKZ - Mode", 
 	"GOKZ - Style", 
-	"GOKZ - Auto Restart", 
 	"GOKZ - Checkpoint Messages", 
 	"GOKZ - Checkpoint Sounds", 
 	"GOKZ - Teleport Sounds", 
 	"GOKZ - Error Sounds", 
 	"GOKZ - VB Indicators",
-	"GOKZ - Timer Button Zone Type"
+	"GOKZ - Timer Button Zone Type",
+	"GOKZ - Safeguard"
 };
 
 stock char gC_CoreOptionDescriptions[OPTION_COUNT][] = 
 {
 	"Movement Mode - 0 = Vanilla, 1 = SimpleKZ, 2 = KZTimer", 
 	"Movement Style - 0 = Normal", 
-	"Automatic Restart Upon Teleport to Start - 0 = Disabled, 1 = Enabled", 
 	"Checkpoint Messages - 0 = Disabled, 1 = Enabled", 
 	"Checkpoint Sounds - 0 = Disabled, 1 = Enabled", 
 	"Teleport Sounds - 0 = Disabled, 1 = Enabled", 
 	"Error Sounds - 0 = Disabled, 1 = Enabled", 
 	"Virtual Button Indicators - 0 = Disabled, 1 = Enabled",
-	"Timer Button Zone Type - 0 = Both buttons, 1 = Only end zone, 2 = Both zones"
+	"Timer Button Zone Type - 0 = Both buttons, 1 = Only end zone, 2 = Both zones",
+	"GOKZ - Safeguard - 0 = Disabled, 1 = Enabled (NUB), 2 = Enabled (PRO)"
 };
 
 stock char gC_CoreOptionPhrases[OPTION_COUNT][] = 
 {
 	"Options Menu - Mode", 
 	"Options Menu - Style", 
-	"Options Menu - Auto Restart", 
 	"Options Menu - Checkpoint Messages", 
 	"Options Menu - Checkpoint Sounds", 
 	"Options Menu - Teleport Sounds", 
 	"Options Menu - Error Sounds", 
 	"Options Menu - Virtual Button Indicators",
-	"Options Menu - Timer Button Zone Type"
+	"Options Menu - Timer Button Zone Type",
+	"Options Menu - Safeguard"
 };
 
 stock char gC_TimerButtonZoneTypePhrases[TIMERBUTTONZONETYPE_COUNT][] = 
@@ -320,32 +394,39 @@ stock char gC_TimerButtonZoneTypePhrases[TIMERBUTTONZONETYPE_COUNT][] =
 	"Timer Button Zone Type - Both Buttons",
 	"Timer Button Zone Type - Only End Zone",
 	"Timer Button Zone Type - Both Zones"
+};
+
+stock char gC_SafeGuardPhrases[SAFEGUARD_COUNT][] =
+{
+	"Options Menu - Disabled",
+	"Safeguard - Enabled NUB",
+	"Safeguard - Enabled PRO"
 }
 
 stock int gI_CoreOptionCounts[OPTION_COUNT] = 
 {
 	MODE_COUNT, 
 	STYLE_COUNT, 
-	AUTORESTART_COUNT, 
 	CHECKPOINTMESSAGES_COUNT, 
 	CHECKPOINTSOUNDS_COUNT, 
 	TELEPORTSOUNDS_COUNT, 
 	ERRORSOUNDS_COUNT, 
 	VIRTUALBUTTONINDICATORS_COUNT,
-	TIMERBUTTONZONETYPE_COUNT
+	TIMERBUTTONZONETYPE_COUNT,
+	SAFEGUARD_COUNT
 };
 
 stock int gI_CoreOptionDefaults[OPTION_COUNT] = 
 {
 	Mode_KZTimer, 
 	Style_Normal, 
-	AutoRestart_Disabled, 
 	CheckpointMessages_Disabled, 
 	CheckpointSounds_Enabled, 
 	TeleportSounds_Disabled, 
 	ErrorSounds_Enabled, 
 	VirtualButtonIndicators_Disabled,
-	TimerButtonZoneType_BothButtons
+	TimerButtonZoneType_BothButtons,
+	Safeguard_Disabled
 };
 
 stock char gC_ModeCVars[MODECVAR_COUNT][] = 
@@ -377,6 +458,94 @@ stock char gC_ModeCVars[MODECVAR_COUNT][] =
 };
 
 
+// =====[ STRUCTS ]=====
+
+enum struct Checkpoint
+{
+	float origin[3];
+	float angles[3];
+	float ladderNormal[3];
+	bool onLadder;
+
+	void Create(int client)
+	{
+		Movement_GetOrigin(client, this.origin);
+		Movement_GetEyeAngles(client, this.angles);
+		GetEntPropVector(client, Prop_Send, "m_vecLadderNormal", this.ladderNormal);
+		this.onLadder = Movement_GetMovetype(client) == MOVETYPE_LADDER;
+	}
+}
+
+enum struct UndoTeleportData
+{
+	float tempOrigin[3];
+	float tempAngles[3];
+	float origin[3];
+	float angles[3];	
+	// Undo TP properties
+	bool lastTeleportOnGround;
+	bool lastTeleportInBhopTrigger;
+	bool lastTeleportInAntiCpTrigger;
+	
+	void Init(int client, bool lastTeleportInBhopTrigger, bool lastTeleportOnGround, bool lastTeleportInAntiCpTrigger)
+	{
+		Movement_GetOrigin(client, this.tempOrigin);
+		Movement_GetEyeAngles(client, this.tempAngles);
+		this.lastTeleportInBhopTrigger = lastTeleportInBhopTrigger;
+		this.lastTeleportOnGround = lastTeleportOnGround;
+		this.lastTeleportInAntiCpTrigger = lastTeleportInAntiCpTrigger;
+	}
+	
+	void Update()
+	{
+		this.origin = this.tempOrigin;
+		this.angles = this.tempAngles;
+	}
+}
+
+
+// NOTE: gokz-core/map/entlump.sp
+enum struct EntlumpToken
+{
+	EntlumpTokenType type;
+	char string[GOKZ_ENTLUMP_MAX_VALUE];
+}
+
+// NOTE: gokz-core/map/triggers.sp
+enum struct AntiBhopTrigger
+{
+	int entRef;
+	int hammerID;
+	float time;
+}
+
+enum struct TeleportTrigger
+{
+	int hammerID;
+	TeleportType type;
+	float delay;
+	char tpDestination[256];
+	bool useDestAngles;
+	bool resetSpeed;
+	bool relativeDestination;
+	bool reorientPlayer;
+}
+
+enum struct TouchedTrigger
+{
+	TriggerType triggerType;
+	int entRef; // entref of one of the TeleportTriggers
+	int startTouchTick; // tick where the player touched the trigger
+	int groundTouchTick; // tick where the player touched the ground
+}
+
+// Legacy triggers that activate timer buttons.
+enum struct TimerButtonTrigger
+{
+	int hammerID;
+	int course;
+	bool isStartTimer;
+}
 
 // =====[ FORWARDS ]=====
 
@@ -547,31 +716,35 @@ forward void GOKZ_OnNextCheckpoint_Post(int client);
  * Called when a player teleports to start.
  *
  * @param client		Client index.
+ * @param course		Course index.
  * @return				Plugin_Handled or Plugin_Stop to block, Plugin_Continue to proceed.
  */
-forward Action GOKZ_OnTeleportToStart(int client);
+forward Action GOKZ_OnTeleportToStart(int client, int course);
 
 /**
  * Called when a player has teleported to start.
  *
  * @param client		Client index.
+ * @param course		Course index.
  */
-forward void GOKZ_OnTeleportToStart_Post(int client);
+forward void GOKZ_OnTeleportToStart_Post(int client, int course);
 
 /**
  * Called when a player teleports to end.
  *
  * @param client		Client index.
+ * @param course		Course index.
  * @return				Plugin_Handled or Plugin_Stop to block, Plugin_Continue to proceed.
  */
-forward Action GOKZ_OnTeleportToEnd(int client);
+forward Action GOKZ_OnTeleportToEnd(int client, int course);
 
 /**
  * Called when a player has teleported to end.
  *
  * @param client		Client index.
+ * @param course		Course index.
  */
-forward void GOKZ_OnTeleportToEnd_Post(int client);
+forward void GOKZ_OnTeleportToEnd_Post(int client, int course);
 
 /**
  * Called when a player undoes a teleport.
@@ -613,8 +786,9 @@ forward void GOKZ_OnStartPositionSet_Post(int client, StartPositionType type, co
  * @param client		Client index.
  * @param jumped		Whether player jumped.
  * @param ladderJump	Whether it was a ladder jump.
+ * @param jumpbug		Whether player performed a jumpbug.
  */
-forward void GOKZ_OnJumpValidated(int client, bool jumped, bool ladderJump);
+forward void GOKZ_OnJumpValidated(int client, bool jumped, bool ladderJump, bool jumpbug);
 
 /**
  * Called when player's current jump is invalidated.
@@ -659,9 +833,10 @@ forward void GOKZ_OnModeUnloaded(int mode);
  * GOKZ_SetTime and GOKZ_SetTeleportCount.
  *
  * @param plugin		Handle of the calling plugin.
+ * @param client		Client index.
  * @return				Plugin_Handled or Plugin_Stop to block, Plugin_Continue to proceed.
  */
-forward Action GOKZ_OnTimerNativeCalledExternally(Handle plugin);
+forward Action GOKZ_OnTimerNativeCalledExternally(Handle plugin, int client);
 
 /**
  * Called when the options menu has been created and 3rd 
@@ -686,6 +861,13 @@ forward void GOKZ_OnOptionsMenuReady(TopMenu topMenu);
  */
 forward void GOKZ_OnCourseRegistered(int course);
 
+/**
+ * Called when a player's run becomes invalidated.
+ * An invalidated run doesn't necessarily stop the timer.
+ *
+ * @param client     	Client index.
+ */
+forward void GOKZ_OnRunInvalidated(int client);
 
 
 // =====[ NATIVES ]=====
@@ -721,6 +903,16 @@ native void GOKZ_SetModeLoaded(int mode, bool loaded, int version = -1);
  * @return				Number of loaded modes.
  */
 native int GOKZ_GetLoadedModeCount();
+
+/**
+ * Sets the player's current mode.
+ * If the player's timer is running, it will be stopped.
+ *
+ * @param client     	Client index.
+ * @param mode       	Mode.
+ * @return           	Whether the operation was successful.
+ */
+native bool GOKZ_SetMode(int client, int mode);
 
 /**
  * Gets the Handle to the options top menu.
@@ -810,12 +1002,30 @@ native void GOKZ_StopTimerAll(bool playSound = true);
 native bool GOKZ_GetTimerRunning(int client);
 
 /**
+ * Gets whether or not a player's timer is valid i.e the run is a valid run.
+ *
+ * @param client    	Client index.
+ * @return				Whether player's timer is running.
+ */
+native bool GOKZ_GetValidTimer(int client);
+
+/**
  * Gets the course a player is currently running.
  *
  * @param client    	Client index.
  * @return		    	Course number.
  */
 native int GOKZ_GetCourse(int client);
+
+/**
+ * Set the player's current course.
+ * This can be blocked by OnTimerNativeCalledExternally().
+ *
+ * @param client     	Client index.
+ * @param course     	Course number.
+ * @return				Whether native was allowed to proceed.
+ */
+native bool GOKZ_SetCourse(int client, int course);
 
 /**
  * Gets whether a player is paused.
@@ -844,6 +1054,13 @@ native float GOKZ_GetTime(int client);
 native bool GOKZ_SetTime(int client, float time);
 
 /**
+ * Mark a player's run as invalid without stopping the timer.
+ *
+ * @param client     	Client index.
+ */
+native void GOKZ_InvalidateRun(int client);
+
+/**
  * Gets a player's current checkpoint count.
  *
  * @param client    	Client index.
@@ -855,11 +1072,49 @@ native int GOKZ_GetCheckpointCount(int client);
  * Sets a player's current checkpoint count.
  * This can be blocked by OnTimerNativeCalledExternally().
  *
- * @param client    	Client index.
- * @param cpCount		Checkpoint count to set to.
+ * @param client      	Client index.
+ * @param cpCount     	Checkpoint count to set to.
  * @return				Whether native was allowed to proceed.
  */
 native int GOKZ_SetCheckpointCount(int client, int cpCount);
+
+/**
+ * Gets checkpoint data of a player.
+ *
+ * @param client     	Client index.
+ * @return           	Client's checkpoint data.
+ */
+native ArrayList GOKZ_GetCheckpointData(int client);
+
+/**
+ * Sets checkpoint data of a player. The checkpoint data is assumed to be ordered.
+ * This can be blocked by OnTimerNativeCalledExternally().
+ *
+ * @param client        Client index.
+ * @param checkpoints   Checkpoint data.
+ * @param version		Checkpoint version.
+ * @return				Whether native was allowed to proceed and operation was successful.
+ */
+native bool GOKZ_SetCheckpointData(int client, ArrayList checkpoints, int version);
+
+/**
+ * Get undo teleport data of a player.
+ *
+ * @param client     	Client index.
+ * @return           	ArrayList of length 1 containing player's undo teleport data.
+ */
+native ArrayList GOKZ_GetUndoTeleportData(int client);
+
+/**
+ * Set undo teleport data of a player.
+ * This can be blocked by OnTimerNativeCalledExternally().
+ *
+ * @param client			     	Client index.
+ * @param undoTeleportDataArray		ArrayList of length 1 containing player's undo teleport data.
+ * @param version					Checkpoint version.
+ * @return              			Whether native was allowed to proceed and operation was successful.
+ */
+native bool GOKZ_SetUndoTeleportData(int client, ArrayList undoTeleportDataArray, int version);
 
 /**
  * Gets a player's current teleport count.
@@ -887,6 +1142,14 @@ native bool GOKZ_SetTeleportCount(int client, int tpCount);
 native void GOKZ_TeleportToStart(int client);
 
 /**
+ * Teleports a player to the start zone/button of the specified course.
+ *
+ * @param client    	Client index.
+ * @param course		Course index.
+ */
+native void GOKZ_TeleportToSearchStart(int client, int course);
+
+/**
  * Gets the virtual button position the player currently has.
  *
  * @param client    	Client index.
@@ -905,6 +1168,14 @@ native int GOKZ_GetVirtualButtonPosition(int client, float position[3], bool isS
  * @param isStart		True to get the start button position, false for the end button.
  */
 native void GOKZ_SetVirtualButtonPosition(int client, const float position[3], int course, bool isStart);
+
+/**
+ * Resets the player's virtual button.
+ *
+ * @param client    	Client index.
+ * @param isStart		True to get the start button position, false for the end button.
+ */
+native void GOKZ_ResetVirtualButtonPosition(int client, bool isStart);
 
 /**
  * Locks the virtual button position of a player.
@@ -956,8 +1227,9 @@ native bool GOKZ_SetStartPositionToMapStart(int client, int course);
  * Teleports a player to end.
  *
  * @param client		Client index.
+ * @param course		Course index.
  */
-native void GOKZ_TeleportToEnd(int client);
+native void GOKZ_TeleportToEnd(int client, int course);
 
 /**
  * Set a new checkpoint at a player's current position.
@@ -965,6 +1237,13 @@ native void GOKZ_TeleportToEnd(int client);
  * @param client    	Client index.
  */
 native void GOKZ_MakeCheckpoint(int client);
+
+/**
+ * Gets whether a player can make a new checkpoint.
+ * @param client		Client index.
+ * @return				Whether player can set a checkpoint.
+ */
+native bool GOKZ_GetCanMakeCheckpoint(int client);
 
 /**
  * Teleports a player to their last checkpoint.
@@ -1053,11 +1332,27 @@ native bool GOKZ_GetCanPause(int client);
 native void GOKZ_Resume(int client);
 
 /**
+ * Gets whether a player can resume. Resuming is not allowed
+ * under some circumstance when the timer is running.
+ *
+ * @param client    	Client index.
+ */
+native bool GOKZ_GetCanResume(int client);
+
+/**
  * Toggles the paused state of a player.
  *
  * @param client    	Client index.
  */
 native void GOKZ_TogglePause(int client);
+
+/**
+ * Gets whether a player can teleport to start.
+ *
+ * @param client		Client index.
+ * @return				Whether player can teleport to start.
+ */
+native bool GOKZ_GetCanTeleportToStartOrEnd(int client);
 
 /**
  * Plays the error sound to a player if they have the option enabled.
@@ -1179,11 +1474,12 @@ native bool GOKZ_GetValidJump(int client);
 /**
  * Has a player switch to a team via GOKZ Core.
  *
- * @param client		Client index.
- * @param team			Which team to switch to.
- * @param restorePos	Whether to restore saved position if leaving spectators.
+ * @param client			Client index.
+ * @param team				Which team to switch to.
+ * @param restorePos		Whether to restore saved position if leaving spectators.
+ * @param forceBroadcast	Force JoinTeam forward calling even if client's team did not change.
  */
-native void GOKZ_JoinTeam(int client, int team, bool restorePos = true);
+native void GOKZ_JoinTeam(int client, int team, bool restorePos = true, bool forceBroadcast = false);
 
 
 
@@ -1478,17 +1774,20 @@ public void __pl_gokz_core_SetNTVOptional()
 	MarkNativeAsOptional("GOKZ_GetModeVersion");
 	MarkNativeAsOptional("GOKZ_SetModeLoaded");
 	MarkNativeAsOptional("GOKZ_GetLoadedModeCount");
+	MarkNativeAsOptional("GOKZ_SetMode");
+	MarkNativeAsOptional("GOKZ_GetOptionsTopMenu");
+	MarkNativeAsOptional("GOKZ_GetCourseRegistered");
 	MarkNativeAsOptional("GOKZ_PrintToChat");
 	MarkNativeAsOptional("GOKZ_PrintToChatAndLog");
-	MarkNativeAsOptional("GOKZ_GetOptionsTopMenu");
-	
 	MarkNativeAsOptional("GOKZ_StartTimer");
 	MarkNativeAsOptional("GOKZ_EndTimer");
 	MarkNativeAsOptional("GOKZ_StopTimer");
 	MarkNativeAsOptional("GOKZ_StopTimerAll");
 	MarkNativeAsOptional("GOKZ_TeleportToStart");
+	MarkNativeAsOptional("GOKZ_TeleportToSearchStart");
 	MarkNativeAsOptional("GOKZ_GetVirtualButtonPosition");
 	MarkNativeAsOptional("GOKZ_SetVirtualButtonPosition");
+	MarkNativeAsOptional("GOKZ_ResetVirtualButtonPosition");
 	MarkNativeAsOptional("GOKZ_LockVirtualButtons");
 	MarkNativeAsOptional("GOKZ_GetStartPosition");
 	MarkNativeAsOptional("GOKZ_SetStartPosition");
@@ -1496,6 +1795,7 @@ public void __pl_gokz_core_SetNTVOptional()
 	MarkNativeAsOptional("GOKZ_SetStartPositionToMapStart");
 	MarkNativeAsOptional("GOKZ_TeleportToEnd");
 	MarkNativeAsOptional("GOKZ_MakeCheckpoint");
+	MarkNativeAsOptional("GOKZ_GetCanMakeCheckpoint");
 	MarkNativeAsOptional("GOKZ_TeleportToCheckpoint");
 	MarkNativeAsOptional("GOKZ_GetCanTeleportToCheckpoint");
 	MarkNativeAsOptional("GOKZ_PrevCheckpoint");
@@ -1507,17 +1807,24 @@ public void __pl_gokz_core_SetNTVOptional()
 	MarkNativeAsOptional("GOKZ_Pause");
 	MarkNativeAsOptional("GOKZ_GetCanPause");
 	MarkNativeAsOptional("GOKZ_Resume");
+	MarkNativeAsOptional("GOKZ_GetCanResume");
 	MarkNativeAsOptional("GOKZ_TogglePause");
+	MarkNativeAsOptional("GOKZ_GetCanTeleportToStartOrEnd");
 	MarkNativeAsOptional("GOKZ_PlayErrorSound");
 	MarkNativeAsOptional("GOKZ_SetValidJumpOrigin");
-	
 	MarkNativeAsOptional("GOKZ_GetTimerRunning");
 	MarkNativeAsOptional("GOKZ_GetCourse");
+	MarkNativeAsOptional("GOKZ_SetCourse");
 	MarkNativeAsOptional("GOKZ_GetPaused");
 	MarkNativeAsOptional("GOKZ_GetTime");
 	MarkNativeAsOptional("GOKZ_SetTime");
+	MarkNativeAsOptional("GOKZ_InvalidateRun");
 	MarkNativeAsOptional("GOKZ_GetCheckpointCount");
 	MarkNativeAsOptional("GOKZ_SetCheckpointCount");
+	MarkNativeAsOptional("GOKZ_GetCheckpointData");
+	MarkNativeAsOptional("GOKZ_SetCheckpointData");
+	MarkNativeAsOptional("GOKZ_GetUndoTeleportData");
+	MarkNativeAsOptional("GOKZ_SetUndoTeleportData");
 	MarkNativeAsOptional("GOKZ_GetTeleportCount");
 	MarkNativeAsOptional("GOKZ_SetTeleportCount");
 	MarkNativeAsOptional("GOKZ_RegisterOption");

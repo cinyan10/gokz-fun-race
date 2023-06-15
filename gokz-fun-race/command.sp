@@ -5,6 +5,8 @@ void RegisterCommands()
 	RegConsoleCmd("sm_bm", CommandFunRaceAccept, "Accept current fun race");
 	RegConsoleCmd("sm_fq", CommandFunRaceSurrender, "Surrender in current fun race");
 	RegConsoleCmd("sm_frt", CommandFunRaceTest, "Test command for fun race");
+	
+	RegConsoleCmd("sm_frz", CommandFunRaceZone, "Manage funrace zone");
 }
 
 // 测试指令
@@ -13,7 +15,17 @@ public Action CommandFunRaceTest(int client, int args)
 	// 仅OP可用
 	if(IsValidClient(client) && GetUserAdmin(client) != INVALID_ADMIN_ID)
 	{
-		GOKZ_PrintToChat(client, true, "测试 - 空");
+		GOKZ_PrintToChat(client, true, "测试 - StartTimer, %d", gI_RaceCourse);
+	}
+	return Plugin_Handled;
+}
+
+public Action CommandFunRaceZone(int client, int args)
+{
+	// 仅OP可用
+	if(IsValidClient(client) && GetUserAdmin(client) != INVALID_ADMIN_ID)
+	{
+		
 	}
 	return Plugin_Handled;
 }

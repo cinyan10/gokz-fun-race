@@ -7,7 +7,11 @@
 #include <gokz>
 #include <gokz/core>
 #include <gokz/jumpstats>
+#include <funrace/zone>
 
+
+
+int gI_BeamMaterialIndex; // 区域边界射线模型索引
 RaceStatus gI_RaceStatus; // 比赛状态
 
 RaceType gI_RaceType; // 比赛项目
@@ -16,15 +20,21 @@ int gI_RaceMode; // 当前比赛模式
 int gI_RacerCount; // 当前比赛参赛人数
 int gI_RacerFinishCount; // 当前比赛完赛人数
 bool gB_AllowCheckpoint; // 当前比赛是否允许存点
+bool gB_AllowRespawn; // 当前比赛是否允许回起点
 bool gB_IsRacePause; // 当前比赛暂停状态
 bool gB_IsRacer[MAXCLIENTS]; // 玩家参赛状态
 bool gB_IsRacerStarted[MAXCLIENTS]; // 玩家是否已经按过开始
 bool gB_IsRacerFinished[MAXCLIENTS]; // 玩家完赛状态
 char gC_RacerRank[MAXCLIENTS][128]; // 玩家排名
+float gF_StartPosition[3];
+float gF_StartAngle[3];
 
+
+#include "gokz-fun-race/zone.sp"
 
 #include "gokz-fun-race/events/space_only.sp"
 #include "gokz-fun-race/events/low_gravity.sp"
+#include "gokz-fun-race/events/relay.sp"
 
 #include "gokz-fun-race/countdown.sp"
 #include "gokz-fun-race/menu.sp"
@@ -50,6 +60,13 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public OnMapStart() {
 	PrecacheSounds();
 	GOKZ_Fun_Race_ResetRaceStatus();
+
+	for (int i = 0; i < 3; i++)
+	{
+		gF_StartPosition[i] = 0.0;
+		gF_StartAngle[i] = 0.0;
+	}
+	OnMapStart_Zone();
 }
 
 void PrecacheSounds()
@@ -107,6 +124,11 @@ public void GOKZ_JS_OnLanding(Jump jump)
 	// OnLanding_SpaceOnly(jump);
 }
 
+public void GOKZ_OnStartPositionSet_Post(int client, StartPositionType type, const float origin[3], const float angles[3])
+{
+	GOKZ_Fun_Race_ResetRacerStartPosition(client, origin[0], origin[1], origin[2]);
+}
+
 // 玩家启动计时器时触发
 public Action GOKZ_OnTimerStart(int client, int course)
 {
@@ -126,7 +148,7 @@ public Action GOKZ_OnTimerStart(int client, int course)
 			return Plugin_Stop;
 		}
 
-		// 如果 关卡不对 或 倒计时结束
+		// 如果 关卡不对 或 倒计时未结束
 		if(gB_IsRacePause || course != gI_RaceCourse || GetCountDownRemain() > 0)
 		{
 			// 禁止开始
@@ -175,6 +197,7 @@ public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsU
 		GOKZ_PrintToChatAll(true, "%s玩家 %s%N %s完成了比赛! %s[%s | %d TP]", gC_Colors[Color_Green], gC_Colors[Color_Purple], client, gC_Colors[Color_Green], gC_Colors[Color_Yellow], GOKZ_FormatTime(time), teleportsUsed);
 		GOKZ_Fun_Race_FinishRace(client, time);
 		GOKZ_StopTimer(client);
+		OnTimerEnd_Relay(client, time);
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
@@ -182,11 +205,50 @@ public Action GOKZ_OnTimerEnd(int client, int course, float time, int teleportsU
 
 public Action GOKZ_OnResume(int client)
 {
-	if(gB_IsRacePause && gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
+	if (!GOKZ_Fun_Race_IsRacer(client))
 	{
-		GOKZ_PrintToChat(client, true, "%c比赛暂停中，请耐心等待", gC_Colors[Color_Red]);
+		return Plugin_Continue;
+	}
+
+	if (GetCountDownRemain() > 0)
+	{
+		GOKZ_PrintToChat(client, true, "%c比赛还在倒计时, 请勿抢跑!", gC_Colors[Color_Red]);
 		GOKZ_PlayErrorSound(client);
 		return Plugin_Stop;
+	}
+	else if(gB_IsRacePause && gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client))
+	{
+		GOKZ_PrintToChat(client, true, "%c比赛暂停中, 请耐心等待", gC_Colors[Color_Red]);
+		GOKZ_PlayErrorSound(client);
+		return Plugin_Stop;
+	}
+
+	return Plugin_Continue;
+}
+
+public void GOKZ_OnOptionChanged(int client, const char[] option, any newValue)
+{
+	if (StrEqual(option, gC_CoreOptionNames[Option_Mode]))
+	{
+		if (newValue != gI_RaceMode && gI_RaceStatus == RaceStatus_Running && GOKZ_Fun_Race_IsRacer(client) && !gB_IsRacerFinished[client])
+		{
+			GOKZ_SetCoreOption(client, Option_Mode, gI_RaceMode);
+			GOKZ_PrintToChat(client, true, "%c比赛中, 禁止切换模式", gC_Colors[Color_Red]);
+			GOKZ_PlayErrorSound(client);
+		}
+	}
+}
+
+public Action GOKZ_OnTeleportToStart(int client, int course)
+{
+	if (gI_RaceStatus == RaceStatus_Running && gB_IsRacer[client] && !gB_IsRacerFinished[client])
+	{
+		if (course == gI_RaceCourse && gB_AllowRespawn)
+		{
+			GOKZ_PrintToChat(client, true, "%c本次比赛禁止回起点", gC_Colors[Color_Red]);
+			GOKZ_PlayErrorSound(client);
+			return Plugin_Stop;
+		}
 	}
 	return Plugin_Continue;
 }

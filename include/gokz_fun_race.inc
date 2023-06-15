@@ -105,7 +105,7 @@ native void GOKZ_Fun_Race_ResetRaceStatus();
 	* @param mode 比赛模式
 	* @param allowCheckpoint 允许存点
 	*/
-native void GOKZ_Fun_Race_SetupRace(int client, RaceType raceType, int course, int mode, bool allowCheckpoint);
+native void GOKZ_Fun_Race_SetupRace(int client, RaceType raceType, int course, int mode, bool allowCheckpoint, bool allowRespawn);
 
 /**
 	* 开始比赛
@@ -119,6 +119,21 @@ native void GOKZ_Fun_Race_StartRace(int client);
 	* @param reason 结束原因
 	*/
 native void GOKZ_Fun_Race_EndRace(int client, char[] reason);
+
+/**
+ * 设置比赛的起始位置
+ * @param client 操作者
+ */
+native void GOKZ_Fun_Race_SetStartPosition(int client);
+
+/**
+ * 重置比赛选手的起始位置
+ * @param client 比赛选手
+ * @param x 尝试设置的起始位置X
+ * @param y 尝试设置的起始位置Y
+ * @param z 尝试设置的起始位置Z
+ */
+native void GOKZ_Fun_Race_ResetRacerStartPosition(int client, float x, float y, float z);
 
 /**
 	* 获取当前比赛是否暂停

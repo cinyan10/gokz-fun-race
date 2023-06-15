@@ -1,5 +1,3 @@
-#include <gokz/anticheat>
-
 // 最多允许违规几次
 #define MAX_SCROLL_VIOLATE 5
 #define CHECK_SCROLL_COUNT 5
@@ -18,7 +16,7 @@ int gI_ScrollViolated[MAXCLIENTS]; // 累计使用滚轮次数
  * 重置空格跳比赛状态
  * @param client 重置对象
  */
-void SpaceOnly_ResetStatus(int client)
+void ResetStatus_SpaceOnly(int client)
 {
 	gI_ScrollViolated[client] = 0;
 	gF_LastScrolledTime[client] = 0.0;
@@ -38,12 +36,12 @@ bool CheckRaceType_SpaceOnly()
 // -------- [ 事件 ] --------
 void OnClientDisconnect_SpaceOnly(int client)
 {
-	SpaceOnly_ResetStatus(client);
+	ResetStatus_SpaceOnly(client);
 }
 
 void OnTimerStart_SpaceOnly(int client)
 {
-	SpaceOnly_ResetStatus(client);
+	ResetStatus_SpaceOnly(client);
 }
 
 void OnPlayerRunCmd_SpaceOnly(int client, int& buttons)
@@ -78,7 +76,7 @@ void OnPlayerRunCmd_SpaceOnly(int client, int& buttons)
 		{
 			// 惩罚玩家
 			GOKZ_Fun_Race_Punish(client, "在空格跳比赛中多次使用滚轮跳");
-			SpaceOnly_ResetStatus(client);
+			ResetStatus_SpaceOnly(client);
 		}
 	}
 	gB_OnGroundLastTick[client] = onGround;

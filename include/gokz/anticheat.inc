@@ -15,8 +15,9 @@
 
 enum ACReason:
 {
-	ACReason_BhopMacro, 
-	ACReason_BhopHack
+	ACReason_BhopMacro = 0, 
+	ACReason_BhopHack,
+	ACREASON_COUNT
 };
 
 
@@ -24,10 +25,16 @@ enum ACReason:
 // =====[ CONSTANTS ]=====
 
 #define AC_MAX_BUTTON_SAMPLES 40
-#define AC_MAX_BHOP_GROUND_TICKS 4
+#define AC_MAX_BHOP_GROUND_TICKS 8
 #define AC_MAX_BHOP_SAMPLES 30
 #define AC_BINDEXCEPTION_SAMPLES 5
 #define AC_LOG_PATH "logs/gokz-anticheat.log"
+
+stock char gC_ACReasons[ACREASON_COUNT][] = 
+{
+	"BHop Macro",
+	"BHop Hack"
+};
 
 
 

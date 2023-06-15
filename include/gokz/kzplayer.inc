@@ -88,6 +88,14 @@ methodmap KZPlayer < MovementAPIPlayer {
 		GOKZ_TeleportToStart(this.ID);
 	}
 	
+	public void TeleportToSearchStart(int course) {
+		GOKZ_TeleportToSearchStart(this.ID, course);
+	}
+	
+	public void TeleportToEnd(int course) {
+		GOKZ_TeleportToEnd(this.ID, course);
+	}
+
 	property StartPositionType StartPositionType {
 		public get() {
 			return GOKZ_GetStartPositionType(this.ID);
@@ -98,6 +106,12 @@ methodmap KZPlayer < MovementAPIPlayer {
 		GOKZ_MakeCheckpoint(this.ID);
 	}
 	
+	property bool CanMakeCheckpoint {
+		public get() {
+			return GOKZ_GetCanMakeCheckpoint(this.ID);
+		}
+	}
+
 	public void TeleportToCheckpoint() {
 		GOKZ_TeleportToCheckpoint(this.ID);
 	}
@@ -152,6 +166,12 @@ methodmap KZPlayer < MovementAPIPlayer {
 		GOKZ_Resume(this.ID);
 	}
 	
+	property bool CanResume {
+		public get() {
+			return GOKZ_GetCanResume(this.ID);
+		}
+	}
+	
 	public void TogglePause() {
 		GOKZ_TogglePause(this.ID);
 	}
@@ -186,6 +206,12 @@ methodmap KZPlayer < MovementAPIPlayer {
 		}
 	}
 	
+	property bool CanTeleportToStart {
+		public get() {
+			return GOKZ_GetCanTeleportToStartOrEnd(this.ID);
+		}
+	}
+	
 	property float Time {
 		public get() {
 			return GOKZ_GetTime(this.ID);
@@ -199,8 +225,17 @@ methodmap KZPlayer < MovementAPIPlayer {
 		public get() {
 			return GOKZ_GetCheckpointCount(this.ID);
 		}
-		public set(int value) {
-			GOKZ_SetCheckpointCount(this.ID, value);
+		public set(int cpCount) {
+			GOKZ_SetCheckpointCount(this.ID, cpCount);
+		}
+	}
+	
+	property ArrayList CheckpointData {
+		public get() {
+			return GOKZ_GetCheckpointData(this.ID);
+		}
+		public set(ArrayList checkpoints) {
+			GOKZ_SetCheckpointData(this.ID, checkpoints, GOKZ_CHECKPOINT_VERSION);
 		}
 	}
 	
@@ -282,15 +317,6 @@ methodmap KZPlayer < MovementAPIPlayer {
 		}
 		public set(int value) {
 			this.SetCoreOption(Option_Style, value);
-		}
-	}
-	
-	property int AutoRestart {
-		public get() {
-			return this.GetCoreOption(Option_AutoRestart);
-		}
-		public set(int value) {
-			this.SetCoreOption(Option_AutoRestart, value);
 		}
 	}
 	
@@ -413,15 +439,32 @@ methodmap KZPlayer < MovementAPIPlayer {
 		}
 	}
 	
-	property int PreIndicator {
+	property int ReplayControls {
 		public get() {
-			return this.GetHUDOption(HUDOption_PreIndicator);
+			return this.GetHUDOption(HUDOption_ShowControls);
 		}
 		public set(int value) {
-			this.SetHUDOption(HUDOption_PreIndicator, value);
+			this.SetHUDOption(HUDOption_ShowControls, value);
+		}
+	}
+
+	property int ShowSpectators {
+		public get() {
+			return this.GetHUDOption(HUDOption_ShowSpectators);
+		}
+		public set(int value) {
+			this.SetHUDOption(HUDOption_ShowSpectators, value);
 		}
 	}
 	
+	property int DynamicMenu {
+		public get() {
+			return this.GetHUDOption(HUDOption_DynamicMenu);
+		}
+		public set(int value) {
+			this.SetHUDOption(HUDOption_DynamicMenu, value);
+		}
+	}
 	#endif
 	// =====[ END HUD ]=====
 	
