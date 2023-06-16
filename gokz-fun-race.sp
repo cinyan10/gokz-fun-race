@@ -243,7 +243,7 @@ public Action GOKZ_OnTeleportToStart(int client, int course)
 {
 	if (gI_RaceStatus == RaceStatus_Running && gB_IsRacer[client] && !gB_IsRacerFinished[client])
 	{
-		if (course == gI_RaceCourse && gB_AllowRespawn)
+		if (course == gI_RaceCourse && gB_AllowRespawn && gI_CountDown == 0)
 		{
 			GOKZ_PrintToChat(client, true, "%c本次比赛禁止回起点", gC_Colors[Color_Red]);
 			GOKZ_PlayErrorSound(client);
