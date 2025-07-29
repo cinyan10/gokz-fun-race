@@ -10,7 +10,6 @@
 #include <funrace/zone>
 
 
-
 int gI_BeamMaterialIndex; // 区域边界射线模型索引
 RaceStatus gI_RaceStatus; // 比赛状态
 
@@ -160,6 +159,7 @@ public Action GOKZ_OnTimerStart(int client, int course)
 		
 		// 更新玩家是否已经开始计时
 		gB_IsRacerStarted[client] = true;
+		GOKZ_ResetVirtualButtonPosition(client, true);
 	}
 	return Plugin_Continue;
 }

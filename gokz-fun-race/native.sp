@@ -160,6 +160,7 @@ public int Native_Fun_Race_EndRace(Handle plugin, int numParams)
 		}
 		char name[64];
 		GetClientName(client, name, sizeof(name));
+		GOKZ_ResetVirtualButtonPosition(client, true);
 		GOKZ_PrintToChatAll(true, "%s#- %s- %s%s", gC_Colors[Color_Purple], gC_Colors[Color_Grey], gC_Colors[Color_Purple], name);
 	}
 
