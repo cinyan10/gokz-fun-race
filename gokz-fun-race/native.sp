@@ -22,6 +22,19 @@ void CreateNatives()
 	CreateNative("GOKZ_Fun_Race_AddRacer", Native_Fun_Race_AddRacer);
 }
 
+void MoveNonParticipantsToSpectator()
+{
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (!IsClientInGame(client) || IsFakeClient(client))
+			continue;
+
+		if (!GOKZ_Fun_Race_IsRacer(client))
+		{
+			ChangeClientTeam(client, CS_TEAM_SPECTATOR);
+		}
+	}
+}
 
 public int Native_Fun_Race_Punish(Handle plugin, int numParams)
 {
@@ -117,7 +130,8 @@ public int Native_Fun_Race_StartRace(Handle plugin, int numParams)
 
 		// 启动倒计时
 		StartCountDown(15);
-	
+		MoveNonParticipantsToSpectator()
+
 		// 将所有参赛者集中至起点
 		for(int racer = 1; racer < MAXCLIENTS; racer++)
 		{
