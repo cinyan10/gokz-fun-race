@@ -73,7 +73,7 @@ void ResetClientStatus_Menu(int client)
 	gI_RaceTypeChoose[client] = RaceType_Normal;
 	gI_RaceCourseChoose[client] = 0;
 	gI_RaceModeChoose[client] = 2;
-	gB_RaceCheckpointEnable[client] = true;
+	gB_RaceCheckpointEnable[client] = false;
 	gB_RaceRespawnEnable[client] = true;
 	gB_RaceDeglobalConfirm[client] = false;
 }
